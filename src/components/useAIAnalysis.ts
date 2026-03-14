@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { analyzeTarget } from '../services/geminiService';
+import { analyzeTarget } from '../../services/geminiService';
 
 interface AIStatus {
   status: 'IDLE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
