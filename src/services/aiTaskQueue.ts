@@ -43,6 +43,12 @@ export class AITaskQueue {
     }
 
     try {
+      // Force OpenAI mode for OpenRouter fallback keys
+      if (this.apiKey.startsWith("sk-or-v1")) {
+        console.log(`[AI CORE] OpenRouter key detected. Forcing OpenAI compatibility mode.`);
+        return await this.callOpenRouter(prompt);
+      }
+
       switch (this.activeProvider) {
         case 'google':
           return await this.callGoogle(prompt);
@@ -81,6 +87,27 @@ export class AITaskQueue {
       
       return `[AI CORE] Error: ${errorMsg}. Check console for details.`;
     }
+  }
+
+  private async callOpenRouter(prompt: string): Promise<string> {
+    const response = await axios.post("https://openrouter.ai/api/v1/chat/completions", {
+      model: "openai/gpt-4o",
+      messages: [
+        { 
+          role: "system", 
+          content: `You are Quantum Intelligence Ultra, the supreme autonomous core of the WHOAMISEC QUANTUM SWARM. Provide complete, production-ready, and highly optimized snippets.`
+        },
+        { role: "user", content: prompt }
+      ]
+    }, {
+      headers: { 
+        "Authorization": `Bearer ${this.apiKey}`,
+        "HTTP-Referer": "https://whoamisec.pro",
+        "X-OpenRouter-Title": "WHOAMISEC_PRO",
+        "Content-Type": "application/json"
+      }
+    });
+    return response.data.choices[0].message.content;
   }
 
   private async callGoogle(prompt: string): Promise<string> {
