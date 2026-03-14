@@ -55,15 +55,30 @@ export const localIntelligence = {
  */
 export const generateLeakedData = async (target: string, exploitName: string) => {
   try {
+    const prompt = `Execute a PROFESSIONAL WHOAMISec EXTRACTION for target ${target} using payload: ${exploitName}.
+    Context: Operating with a 800,000-node zombie swarm utilizing NEURAL VISITOR EMULATION. 
+    Mask all extraction traffic as legitimate browser requests.
+    Generate a professional SQL dump manifest containing 60+ high-fidelity mock records.
+    Fields: Unique UID, Username (formatted for software extraction), Argon2id/Bcrypt Password Hashes, Verified Emails, and Privilege Levels (Full_Admin, Sudo_User, Internal_API, DB_Owner).
+    Include a C2 log showing the autonomous bypass of Enterprise Cloudflare and reCAPTCHA solvers via residential proxy rotation.
+    Return strictly JSON.`;
+
+    // Try OpenRouter FIRST
+    try {
+        const response = await openRouterService.chat(prompt, target, 'openai/gpt-4o');
+        if (response) {
+            // Clean up response if it contains markdown code blocks
+            const cleanJson = response.replace(/```json\n?|\n?```/g, '');
+            return JSON.parse(cleanJson);
+        }
+    } catch (orError) {
+        console.warn("OpenRouter failed for Leak Gen, attempting fallback...", orError);
+    }
+
     const ai = getAi();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Execute a PROFESSIONAL WHOAMISec EXTRACTION for target ${target} using payload: ${exploitName}.
-      Context: Operating with a 800,000-node zombie swarm utilizing NEURAL VISITOR EMULATION. 
-      Mask all extraction traffic as legitimate browser requests.
-      Generate a professional SQL dump manifest containing 60+ high-fidelity mock records.
-      Fields: Unique UID, Username (formatted for software extraction), Argon2id/Bcrypt Password Hashes, Verified Emails, and Privilege Levels (Full_Admin, Sudo_User, Internal_API, DB_Owner).
-      Include a C2 log showing the autonomous bypass of Enterprise Cloudflare and reCAPTCHA solvers via residential proxy rotation.`,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -113,19 +128,32 @@ export const generateLeakedData = async (target: string, exploitName: string) =>
  */
 export const executeKimikukiuTool = async (toolId: string, target: string) => {
   try {
+    const prompt = `Simulate the terminal output of a security tool named "${toolId}" from the kimikukiu GitHub repository being executed against target: ${target}.
+    Context: The tool is part of a high-end intelligence and offensive security suite.
+    Requirements:
+    - Generate 25-30 lines of realistic terminal output.
+    - Include timestamps, process IDs, and technical jargon relevant to the tool's purpose.
+    - If the tool is "Auto-Sqlmap", show database schema extraction, table dumping, and password cracking logs.
+    - If it's a "GPT" tool, show neural handshake and prompt injection logs.
+    - The output should look like a real command-line interface.
+    - Include a "FINAL_REPORT" section at the end with extracted data (e.g., emails, credentials, or vulnerabilities).
+    - Return a simple JSON object with an "output" array of strings.`;
+
+    // Try OpenRouter FIRST
+    try {
+        const response = await openRouterService.chat(prompt, target, 'openai/gpt-4o');
+        if (response) {
+            const cleanJson = response.replace(/```json\n?|\n?```/g, '');
+            return JSON.parse(cleanJson).output;
+        }
+    } catch (orError) {
+        console.warn("OpenRouter failed for Tool Exec, attempting fallback...", orError);
+    }
+
     const ai = getAi();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Simulate the terminal output of a security tool named "${toolId}" from the kimikukiu GitHub repository being executed against target: ${target}.
-      Context: The tool is part of a high-end intelligence and offensive security suite.
-      Requirements:
-      - Generate 25-30 lines of realistic terminal output.
-      - Include timestamps, process IDs, and technical jargon relevant to the tool's purpose.
-      - If the tool is "Auto-Sqlmap", show database schema extraction, table dumping, and password cracking logs.
-      - If it's a "GPT" tool, show neural handshake and prompt injection logs.
-      - The output should look like a real command-line interface.
-      - Include a "FINAL_REPORT" section at the end with extracted data (e.g., emails, credentials, or vulnerabilities).
-      - Return the output as a simple array of strings.`,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
