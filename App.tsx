@@ -45,6 +45,7 @@ import InvestigationAITool from './components/tools/InvestigationAITool';
 import OSINTInvestigationTool from './components/tools/OSINTInvestigationTool';
 import AndroidInvestigationTool from './components/tools/AndroidInvestigationTool';
 import AWSMetadataTool from './components/tools/AWSMetadataTool';
+import FileDiscoveryTool from './components/tools/FileDiscoveryTool';
 
 const BOT_LOCATIONS: BotNode[] = [
   { id: 'WHOAMI-US-CLUSTER', country: 'United States', status: 'ONLINE', latency: 28, uptime: '45d', type: 'SERVER' },
@@ -686,6 +687,10 @@ const MainApp: React.FC = () => {
 
         {activeTab === AppTab.AWS_METADATA && (
           <div className="h-full animate-in"><AWSMetadataTool /></div>
+        )}
+
+        {activeTab === AppTab.FILE_DISCOVERY && (
+          <div className="h-full animate-in"><FileDiscoveryTool /></div>
         )}
 
         {activeTab === AppTab.GPT_HUMAN && (
