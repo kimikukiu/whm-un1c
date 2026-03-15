@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { queryAgent } from '../../services/geminiService';
+import { probeTarget, analyzeSecurityHeaders, testVulnerabilities, crawlTarget, bruteforceDirectories } from '../../services/realScanService';
 
 interface ExtractedFile {
   name: string;
@@ -44,7 +45,7 @@ export default function BurpSuiteTool() {
     addLog(`[+] Downloaded: ${file.name}`);
   };
 
-  const startAttack = () => {
+  const startAttack = async () => {
     if (!target) {
       alert('Please enter a target URL.');
       return;
@@ -52,57 +53,87 @@ export default function BurpSuiteTool() {
 
     setIsAttacking(true);
     setExtractedFiles([]);
-    addLog(`[!] INITIATING INTRUDER SNIPER ATTACK ON: ${target}`);
-    addLog(`[*] Loading payload list: fuzz_all_params.txt (14,203 payloads)...`);
+    const targetUrl = target.startsWith('http') ? target : `https://${target}`;
+    addLog(`[!] INITIATING REAL INTRUDER SCAN ON: ${targetUrl}`);
 
-    const attackSequence = [
-      `[*] Intercepting request to ${target}/api/v1/user/profile...`,
-      `[*] Modifying 'id' parameter... injecting SQLi payloads...`,
-      `[+] Request 142: HTTP 500 Internal Server Error (Possible SQLi)`,
-      `[*] Sending to Repeater for manual verification...`,
-      `[*] Crafting UNION SELECT payload...`,
-      `[!] VULNERABILITY CONFIRMED: Error-based SQL Injection in 'id' parameter.`,
-      `[*] Extracting database schema...`,
-      `[+] Schema extracted: 14 tables found.`,
-      `[*] Dumping table 'administrators'...`,
-      `[+] Hash dump complete.`,
-      `[*] Bypassing WAF using chunked encoding...`,
-      `[+] WAF bypassed. Session cookie hijacked.`
-    ];
+    // Phase 1: Probe
+    addLog(`[*] Phase 1: Probing target...`);
+    const probe = await probeTarget(targetUrl);
+    if (probe.error) {
+      addLog(`[!] Connection error: ${probe.error}`);
+    } else {
+      addLog(`[+] HTTP ${probe.status} ${probe.statusText} (${probe.responseTime}ms)`);
+      addLog(`[+] Server: ${probe.server || 'Hidden'} | Content-Type: ${probe.contentType}`);
+      if (probe.technologies.length > 0) {
+        addLog(`[+] Technologies detected: ${probe.technologies.join(', ')}`);
+      }
+    }
 
-    let delay = 1000;
-    attackSequence.forEach((step, index) => {
-      setTimeout(() => {
-        addLog(step);
-
-        if (step.includes('Hash dump complete')) {
-          setExtractedFiles(prev => [...prev, {
-            name: 'admin_hashes.txt',
-            size: '1.2 KB',
-            type: 'Credentials',
-            content: 'admin:$2y$10$xyz...\nroot:$2y$10$abc...\nsuper:$2y$10$def...'
-          }]);
-        }
-        
-        if (step.includes('Session cookie hijacked')) {
-          setExtractedFiles(prev => [...prev, {
-            name: 'hijacked_session.json',
-            size: '0.5 KB',
-            type: 'Session Data',
-            content: '{\n  "cookie": "session_id=987654321abcdef; HttpOnly; Secure",\n  "user_agent": "Mozilla/5.0...",\n  "csrf_token": "abc123xyz"\n}'
-          }]);
-        }
-
-        if (index === attackSequence.length - 1) {
-          setTimeout(() => {
-            addLog(`[!] INTRUDER ATTACK COMPLETE.`);
-            setIsAttacking(false);
-          }, 1500);
-        }
-      }, delay);
-      
-      delay += Math.floor(Math.random() * 1500) + 500;
+    // Phase 2: Security Headers
+    addLog(`[*] Phase 2: Analyzing security headers...`);
+    const headers = await analyzeSecurityHeaders(targetUrl);
+    const criticalHeaders = headers.headers.filter(h => h.status === 'critical');
+    const secureHeaders = headers.headers.filter(h => h.status === 'secure');
+    addLog(`[+] Security score: ${headers.score}/100 (Grade: ${headers.grade})`);
+    addLog(`[+] Secure headers: ${secureHeaders.length}/${headers.headers.length}`);
+    criticalHeaders.forEach(h => {
+      addLog(`[!] MISSING: ${h.name} — ${h.description}`);
     });
+
+    setExtractedFiles(prev => [...prev, {
+      name: 'security_headers_report.json',
+      size: `${JSON.stringify(headers, null, 2).length} bytes`,
+      type: 'Header Analysis',
+      content: JSON.stringify(headers, null, 2),
+    }]);
+
+    // Phase 3: Crawl
+    addLog(`[*] Phase 3: Crawling target for attack surface...`);
+    const crawl = await crawlTarget(targetUrl);
+    addLog(`[+] Links discovered: ${crawl.links.length}`);
+    addLog(`[+] Forms found: ${crawl.forms.length}`);
+    addLog(`[+] Scripts loaded: ${crawl.scripts.length}`);
+    if (crawl.comments.length > 0) {
+      addLog(`[!] HTML comments found: ${crawl.comments.length} (potential info leak)`);
+    }
+    crawl.forms.forEach(f => {
+      addLog(`[+] Form: ${f.method.toUpperCase()} ${f.action} — params: ${f.inputs.join(', ')}`);
+    });
+
+    // Phase 4: Directory bruteforce
+    addLog(`[*] Phase 4: Directory bruteforce (35 paths)...`);
+    const dirs = await bruteforceDirectories(targetUrl, (path, status) => {
+      addLog(`[+] FOUND: ${path} (HTTP ${status})`);
+    });
+    addLog(`[+] Accessible paths: ${dirs.length}/35`);
+    
+    if (dirs.length > 0) {
+      setExtractedFiles(prev => [...prev, {
+        name: 'directory_enum.txt',
+        size: `${dirs.length} entries`,
+        type: 'Directory Enumeration',
+        content: dirs.map(d => `${d.path} — HTTP ${d.status} (${d.size} bytes)`).join('\n'),
+      }]);
+    }
+
+    // Phase 5: Vulnerability testing
+    addLog(`[*] Phase 5: Injecting real payloads (SQLi, XSS, Path Traversal)...`);
+    const vulns = await testVulnerabilities(targetUrl);
+    const criticalVulns = vulns.filter(v => v.severity === 'critical' || v.severity === 'high');
+    vulns.forEach(v => {
+      const prefix = v.severity === 'critical' ? '[!]' : v.severity === 'high' ? '[!]' : v.severity === 'medium' ? '[+]' : '[*]';
+      addLog(`${prefix} ${v.type} | param=${v.parameter} | ${v.indication} (${v.responseTime}ms)`);
+    });
+
+    setExtractedFiles(prev => [...prev, {
+      name: 'vulnerability_report.json',
+      size: `${JSON.stringify(vulns, null, 2).length} bytes`,
+      type: 'Vulnerability Scan',
+      content: JSON.stringify(vulns, null, 2),
+    }]);
+
+    addLog(`[!] INTRUDER SCAN COMPLETE. ${criticalVulns.length} critical/high findings.`);
+    setIsAttacking(false);
   };
 
   const startAiAssist = async () => {
@@ -114,42 +145,62 @@ export default function BurpSuiteTool() {
     setIsAiAssisting(true);
     setIsAttacking(true);
     setExtractedFiles([]);
-    addLog(`[🧠 AI-ASSIST] Neural Core taking control of Burp Proxy...`);
-    addLog(`[🧠 AI-ASSIST] Analyzing target architecture for ${target}...`);
+    const targetUrl = target.startsWith('http') ? target : `https://${target}`;
+    addLog(`[AI] Neural Core taking control of Burp Proxy...`);
+    addLog(`[AI] Running real recon on ${targetUrl} before AI analysis...`);
 
+    // Run real scans first
+    const probe = await probeTarget(targetUrl);
+    addLog(`[+] Probe: HTTP ${probe.status} | Server: ${probe.server || 'hidden'} | Tech: ${probe.technologies.join(', ') || 'unknown'}`);
+
+    const headers = await analyzeSecurityHeaders(targetUrl);
+    addLog(`[+] Security Grade: ${headers.grade} (${headers.score}/100)`);
+
+    const crawl = await crawlTarget(targetUrl);
+    addLog(`[+] Crawl: ${crawl.links.length} links, ${crawl.forms.length} forms, ${crawl.scripts.length} scripts`);
+
+    const vulns = await testVulnerabilities(targetUrl);
+    const critVulns = vulns.filter(v => v.severity === 'critical' || v.severity === 'high');
+    addLog(`[+] Vuln scan: ${critVulns.length} critical/high out of ${vulns.length} tests`);
+
+    // Feed real data to AI
+    addLog(`[AI] Feeding real scan data to Quantum Intelligence for deep analysis...`);
     try {
-      const prompt = `Act as an autonomous Blackhat AI integrated into Burp Suite. Generate a highly technical, step-by-step exploit execution log for the target: ${target}. Focus on advanced web vulnerabilities (e.g., HTTP Request Smuggling, Deserialization, SSRF, GraphQL introspection). Return ONLY the log lines, one per line, starting with [*] for info, [+] for success, or [!] for critical findings. Do not include markdown formatting or explanations. Max 10 lines.`;
-      
-      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: BurpSuite Offensive Security Module");
-      const lines = response.split('\n').filter(l => l.trim().length > 0);
-
-      let delay = 1500;
-      lines.forEach((line, index) => {
-        setTimeout(() => {
-          addLog(`[🤖 AI] ${line}`);
-
-          if (index === lines.length - 1) {
-            setTimeout(() => {
-              setExtractedFiles(prev => [...prev, {
-                name: 'ai_burp_report.txt',
-                size: '3.4 KB',
-                type: 'AI Analysis',
-                content: `Target: ${target}\nAI Vulnerability Report:\n\n${lines.join('\n')}\n\nRecommendation: Immediate patching required.`
-              }]);
-              addLog(`[🧠 AI-ASSIST] Autonomous exploitation complete. Report generated.`);
-              setIsAiAssisting(false);
-              setIsAttacking(false);
-            }, 1000);
-          }
-        }, delay);
-        delay += Math.floor(Math.random() * 2000) + 800;
+      const realData = JSON.stringify({
+        probe: { status: probe.status, server: probe.server, technologies: probe.technologies, headers: probe.headers },
+        securityHeaders: { grade: headers.grade, score: headers.score, critical: headers.headers.filter(h => h.status === 'critical').map(h => h.name) },
+        crawl: { links: crawl.links.length, forms: crawl.forms, scripts: crawl.scripts.length, comments: crawl.comments },
+        vulnerabilities: vulns.map(v => ({ type: v.type, param: v.parameter, severity: v.severity, indication: v.indication })),
       });
 
+      const prompt = `You are an expert penetration tester analyzing REAL scan results from Burp Suite against ${targetUrl}. Here is the actual scan data:\n\n${realData}\n\nProvide a professional penetration test analysis. For each finding, explain the risk, how to exploit it, and remediation. Focus on the most critical issues first. Be specific and reference the actual data. Format as a professional pentest report.`;
+      
+      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Real Burp Suite scan results analysis");
+      const lines = response.split('\n').filter((l: string) => l.trim().length > 0);
+
+      lines.forEach((line: string) => {
+        addLog(`[AI] ${line}`);
+      });
+
+      setExtractedFiles(prev => [...prev, {
+        name: 'ai_pentest_report.txt',
+        size: `${response.length} bytes`,
+        type: 'AI Pentest Report (Real Data)',
+        content: `Target: ${targetUrl}\nAI Analysis of Real Scan Data:\n\n${response}`,
+      }, {
+        name: 'raw_scan_data.json',
+        size: `${realData.length} bytes`,
+        type: 'Raw Scan Data',
+        content: realData,
+      }]);
+
+      addLog(`[AI] Real-data analysis complete. Report generated.`);
     } catch (error) {
-      addLog(`[!] AI Core connection failed. Falling back to manual mode.`);
-      setIsAiAssisting(false);
-      setIsAttacking(false);
+      addLog(`[!] AI Core connection failed. Raw scan data still available.`);
     }
+
+    setIsAiAssisting(false);
+    setIsAttacking(false);
   };
 
   return (

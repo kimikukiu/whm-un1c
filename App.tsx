@@ -13,8 +13,11 @@ import SqlInject from './components/SqlInject';
 import BotnetCore from './components/BotnetCore';
 import Settings from './components/Settings';
 import QuantumIntelligenceUltra from './components/QuantumIntelligence';
-import { AppTab, LogEntry, OSINTResult, ThreatFeedItem, Exploit, ExploitHistoryItem, LeakedRecord, NetworkConfig, BotNode } from './types';
+import { AppTab, LogEntry, OSINTResult, ThreatFeedItem, Exploit, ExploitHistoryItem, LeakedRecord, NetworkConfig, BotNode, AIConfig } from './types';
 import { analyzeTarget, generateLeakedData } from './services/geminiService';
+import AIConfigPanel from './components/AIConfigPanel';
+import { setAIConfig, loadAIConfigFromStorage } from './src/services/aiService';
+import LoginGate from './components/LoginGate';
 
 import GptTool from './components/tools/GptTool';
 import IdeTool from './components/tools/IdeTool';
@@ -28,6 +31,19 @@ import LazarusTool from './components/tools/LazarusTool';
 import BurpSuiteTool from './components/tools/BurpSuiteTool';
 import OwaspTool from './components/tools/OwaspTool';
 import { ZxCDDoS } from './components/tools/ZxCDDoS';
+import LispAiControl from './components/tools/LispAiControl';
+import LispCryptoPanel from './components/tools/LispCryptoPanel';
+import LispDatabasePanel from './components/tools/LispDatabasePanel';
+import LispNeuralPanel from './components/tools/LispNeuralPanel';
+import LispCiscoPanel from './components/tools/LispCiscoPanel';
+import LispClispPanel from './components/tools/LispClispPanel';
+import LispBreakerPanel from './components/tools/LispBreakerPanel';
+import CycorpPanel from './components/tools/CycorpPanel';
+import GptModulePanel from './components/tools/GptModulePanel';
+import BotnetC2Panel from './components/tools/BotnetC2Panel';
+import InvestigationAITool from './components/tools/InvestigationAITool';
+import OSINTInvestigationTool from './components/tools/OSINTInvestigationTool';
+import AndroidInvestigationTool from './components/tools/AndroidInvestigationTool';
 
 const BOT_LOCATIONS: BotNode[] = [
   { id: 'WHOAMI-US-CLUSTER', country: 'United States', status: 'ONLINE', latency: 28, uptime: '45d', type: 'SERVER' },
@@ -107,6 +123,31 @@ const MainApp: React.FC = () => {
     rateLimit: 64,
     sshUser: 'root'
   });
+
+  // AI Configuration state
+  const [aiConfig, setAiConfig] = useState<AIConfig>({
+    provider: 'openrouter',
+    openrouterKey: '',
+    openaiKey: '',
+    geminiKey: '',
+    deepseekKey: '',
+    selectedModel: 'openai/gpt-4o',
+    enableGemini: false,
+  });
+
+  // Load AI config on mount
+  useEffect(() => {
+    const stored = loadAIConfigFromStorage();
+    if (stored) {
+      setAiConfig(stored);
+    }
+  }, []);
+
+  const handleAIConfigChange = (newConfig: AIConfig) => {
+    setAiConfig(newConfig);
+    setAIConfig(newConfig);
+    addLog(`AI_CONFIG: Provider set to ${newConfig.provider} (${newConfig.selectedModel})`, 'success');
+  };
 
   const addLog = useCallback((message: string, level: LogEntry['level'] = 'info') => {
     const newLog: LogEntry = {
@@ -550,6 +591,214 @@ const MainApp: React.FC = () => {
           <QuantumIntelligenceUltra />
         )}
 
+        {activeTab === AppTab.AI_CONFIG && (
+          <AIConfigPanel 
+            config={aiConfig} 
+            onConfigChange={handleAIConfigChange}
+            addLog={addLog}
+          />
+        )}
+
+        {activeTab === AppTab.GPT_TOOL && (
+          <div className="h-full animate-in"><GptTool /></div>
+        )}
+
+        {activeTab === AppTab.SOLANA_TOOL && (
+          <div className="h-full animate-in"><SolanaTool /></div>
+        )}
+
+        {activeTab === AppTab.DEPLOYER_TOOL && (
+          <div className="h-full animate-in"><DeployerTool /></div>
+        )}
+
+        {activeTab === AppTab.SCANNER_TOOL && (
+          <div className="h-full animate-in"><ScannerTool /></div>
+        )}
+
+        {activeTab === AppTab.S3_TOOL && (
+          <div className="h-full animate-in"><S3Tool /></div>
+        )}
+
+        {activeTab === AppTab.BLACKHAT_TOOL && (
+          <div className="h-full animate-in"><BlackhatTool /></div>
+        )}
+
+        {activeTab === AppTab.LAZARUS_TOOL && (
+          <div className="h-full animate-in"><LazarusTool /></div>
+        )}
+
+        {activeTab === AppTab.BURPSUITE_TOOL && (
+          <div className="h-full animate-in"><BurpSuiteTool /></div>
+        )}
+
+        {activeTab === AppTab.OWASP_TOOL && (
+          <div className="h-full animate-in"><OwaspTool /></div>
+        )}
+
+        {activeTab === AppTab.LISP_AI_CONTROL && (
+          <div className="h-full animate-in"><LispAiControl /></div>
+        )}
+
+        {activeTab === AppTab.LISP_CRYPTO && (
+          <div className="h-full animate-in"><LispCryptoPanel /></div>
+        )}
+
+        {activeTab === AppTab.LISP_DATABASE && (
+          <div className="h-full animate-in"><LispDatabasePanel /></div>
+        )}
+
+        {activeTab === AppTab.LISP_NEURAL && (
+          <div className="h-full animate-in"><LispNeuralPanel /></div>
+        )}
+
+        {activeTab === AppTab.LISP_CISCO && (
+          <div className="h-full animate-in"><LispCiscoPanel /></div>
+        )}
+
+        {activeTab === AppTab.LISP_CLISP && (
+          <div className="h-full animate-in"><LispClispPanel /></div>
+        )}
+
+        {activeTab === AppTab.LISP_BREAKER && (
+          <div className="h-full animate-in"><LispBreakerPanel /></div>
+        )}
+
+        {activeTab === AppTab.CYCORP_CYC && (
+          <div className="h-full animate-in"><CycorpPanel /></div>
+        )}
+
+        {activeTab === AppTab.BOTNET_C2 && (
+          <div className="h-full animate-in"><BotnetC2Panel /></div>
+        )}
+
+        {activeTab === AppTab.INVESTIGATION_AI && (
+          <div className="h-full animate-in"><InvestigationAITool /></div>
+        )}
+
+        {activeTab === AppTab.OSINT_INVESTIGATION && (
+          <div className="h-full animate-in"><OSINTInvestigationTool /></div>
+        )}
+
+        {activeTab === AppTab.ANDROID_INVESTIGATION && (
+          <div className="h-full animate-in"><AndroidInvestigationTool /></div>
+        )}
+
+        {activeTab === AppTab.GPT_HUMAN && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="humanTransition" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_PLAN && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="plan" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_GEO && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="georeferencer" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_AMOVEO && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="amoveo" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_UAV && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="uav" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_ICE && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="ice" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_PALANTIR && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="palantir" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_DRONES && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="drones" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_BANK && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="bank" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_QUANTUM_ARMY && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="quantum" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_SOCIAL && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="social" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_CCTV && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="cctv" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_GHOST && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="ghost" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_TV_HIJACK && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="tvbroadcast" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_STS_BALLOT && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="ststelecom" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_VEHICLES && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="vehicles" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_AIRPORTS && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="airports" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_METRO && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="metro" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_BIOMETRIC && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="biometric" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_SCADA && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="scada" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_SS7 && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="ss7" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_AEROSPACE && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="aerospace" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_STARLINK && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="starlink" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_JETS && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="militaryjets" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_BANKING && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="banking" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_POLICE && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="policeradio" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_CODER && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="quantumcoder" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_SPACEX && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="spacex" /></div>
+        )}
+
+        {activeTab === AppTab.GPT_PROMIS && (
+          <div className="h-full animate-in"><GptModulePanel moduleKey="promis" /></div>
+        )}
+
         {/* Terminal Popup Bubble */}
         <div className={`fixed bottom-20 right-4 w-80 md:w-96 h-80 z-40 bg-black/95 backdrop-blur border border-white/10 rounded-lg overflow-hidden shadow-2xl transition-all origin-bottom-right ${isTerminalOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}>
            <Terminal logs={logs} onClose={() => setIsTerminalOpen(false)} />
@@ -611,20 +860,22 @@ const ResultPane = ({ title, icon, items, color }: { title: string, icon: string
 
 const App: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/" element={<MainApp />} />
-      <Route path="/gpt-tool" element={<GptTool />} />
-      <Route path="/ide-tool" element={<IdeTool />} />
-      <Route path="/solana-tool" element={<SolanaTool />} />
-      <Route path="/deployer-tool" element={<DeployerTool />} />
-      <Route path="/quantum-tool" element={<QuantumTool />} />
-      <Route path="/scanner-tool" element={<ScannerTool />} />
-      <Route path="/s3-tool" element={<S3Tool />} />
-      <Route path="/blackhat-tool" element={<BlackhatTool />} />
-      <Route path="/lazarus-tool" element={<LazarusTool />} />
-      <Route path="/burpsuite-tool" element={<BurpSuiteTool />} />
-      <Route path="/owasp-tool" element={<OwaspTool />} />
-    </Routes>
+    <LoginGate>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/gpt-tool" element={<GptTool />} />
+        <Route path="/ide-tool" element={<IdeTool />} />
+        <Route path="/solana-tool" element={<SolanaTool />} />
+        <Route path="/deployer-tool" element={<DeployerTool />} />
+        <Route path="/quantum-tool" element={<QuantumTool />} />
+        <Route path="/scanner-tool" element={<ScannerTool />} />
+        <Route path="/s3-tool" element={<S3Tool />} />
+        <Route path="/blackhat-tool" element={<BlackhatTool />} />
+        <Route path="/lazarus-tool" element={<LazarusTool />} />
+        <Route path="/burpsuite-tool" element={<BurpSuiteTool />} />
+        <Route path="/owasp-tool" element={<OwaspTool />} />
+      </Routes>
+    </LoginGate>
   );
 };
 

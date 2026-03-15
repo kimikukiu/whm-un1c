@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { queryAgent } from '../../services/geminiService';
+import { probeTarget, analyzeSecurityHeaders, testVulnerabilities, crawlTarget, bruteforceDirectories } from '../../services/realScanService';
 
 interface ExtractedFile {
   name: string;
@@ -14,7 +15,7 @@ export default function OwaspTool() {
   const [isAiAssisting, setIsAiAssisting] = useState(false);
   const [logs, setLogs] = useState<string[]>([
     'OWASP_ZAP_V2.14.0 initialized.',
-    'Loading Top 10 Vulnerability signatures...',
+    'All scans perform REAL HTTP requests against the target.',
     'Awaiting target specification for Active Scan...'
   ]);
   const [extractedFiles, setExtractedFiles] = useState<ExtractedFile[]>([]);
@@ -44,7 +45,7 @@ export default function OwaspTool() {
     addLog(`[+] Downloaded: ${file.name}`);
   };
 
-  const startAttack = () => {
+  const startAttack = async () => {
     if (!target) {
       alert('Please enter a target URL.');
       return;
@@ -52,69 +53,101 @@ export default function OwaspTool() {
 
     setIsAttacking(true);
     setExtractedFiles([]);
-    addLog(`[!] INITIATING OWASP ACTIVE SCAN ON: ${target}`);
-    addLog(`[*] Spidering target...`);
+    const targetUrl = target.startsWith('http') ? target : `https://${target}`;
+    addLog(`[!] INITIATING REAL OWASP ACTIVE SCAN ON: ${targetUrl}`);
 
-    const attackSequence = [
-      `[*] Crawling complete. 142 URLs discovered.`,
-      `[*] Starting Active Scan...`,
-      `[*] Scanning for A01:2021-Broken Access Control...`,
-      `[+] Found IDOR vulnerability in /api/users/{id}`,
-      `[*] Scanning for A02:2021-Cryptographic Failures...`,
-      `[-] No cleartext transmission detected.`,
-      `[*] Scanning for A03:2021-Injection...`,
-      `[!] VULNERABILITY CONFIRMED: Blind SQL Injection in 'search' parameter.`,
-      `[*] Scanning for A04:2021-Insecure Design...`,
-      `[*] Scanning for A05:2021-Security Misconfiguration...`,
-      `[+] Directory listing enabled on /assets/uploads/`,
-      `[*] Scanning for A06:2021-Vulnerable and Outdated Components...`,
-      `[!] jQuery 1.12.4 detected (CVE-2015-9251).`,
-      `[*] Scanning for A07:2021-Identification and Authentication Failures...`,
-      `[*] Scanning for A08:2021-Software and Data Integrity Failures...`,
-      `[*] Scanning for A09:2021-Security Logging and Monitoring Failures...`,
-      `[*] Scanning for A10:2021-Server-Side Request Forgery (SSRF)...`,
-      `[!] VULNERABILITY CONFIRMED: SSRF in /api/fetch_image?url=`
-    ];
-
-    let delay = 1000;
-    attackSequence.forEach((step, index) => {
-      setTimeout(() => {
-        addLog(step);
-
-        if (step.includes('Directory listing enabled')) {
-          setExtractedFiles(prev => [...prev, {
-            name: 'directory_listing.txt',
-            size: '0.8 KB',
-            type: 'Information Disclosure',
-            content: 'Index of /assets/uploads/\n\n- backup.zip\n- config.bak\n- users.csv'
-          }]);
-        }
-        
-        if (step.includes('SSRF in')) {
-          setExtractedFiles(prev => [...prev, {
-            name: 'ssrf_proof.txt',
-            size: '1.5 KB',
-            type: 'Vulnerability Proof',
-            content: `Target: ${target}/api/fetch_image?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/\n\nResponse:\n{\n  "Code" : "Success",\n  "LastUpdated" : "2026-03-13T12:00:00Z",\n  "Type" : "AWS-HMAC",\n  "AccessKeyId" : "AKIAIOSFODNN7EXAMPLE",\n  "SecretAccessKey" : "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",\n  "Token" : "token_data_here"\n}`
-          }]);
-        }
-
-        if (index === attackSequence.length - 1) {
-          setTimeout(() => {
-            addLog(`[!] ACTIVE SCAN COMPLETE. Generating report...`);
-            setExtractedFiles(prev => [...prev, {
-              name: 'owasp_zap_report.html',
-              size: '14.2 KB',
-              type: 'Scan Report',
-              content: `<html><body><h1>ZAP Scanning Report</h1><h2>Target: ${target}</h2><p>High Risk: 2</p><p>Medium Risk: 1</p><p>Low Risk: 0</p></body></html>`
-            }]);
-            setIsAttacking(false);
-          }, 1500);
-        }
-      }, delay);
-      
-      delay += Math.floor(Math.random() * 1500) + 500;
+    // A01: Broken Access Control — probe for exposed admin/sensitive paths
+    addLog(`[*] A01:2021 — Scanning for Broken Access Control...`);
+    const dirs = await bruteforceDirectories(targetUrl, (path, status) => {
+      addLog(`[+] Accessible: ${path} (HTTP ${status})`);
     });
+    addLog(`[+] ${dirs.length} accessible paths found (potential access control issues)`);
+
+    if (dirs.length > 0) {
+      setExtractedFiles(prev => [...prev, {
+        name: 'access_control_findings.txt',
+        size: `${dirs.length} entries`,
+        type: 'A01: Broken Access Control',
+        content: dirs.map(d => `${d.path} — HTTP ${d.status} (${d.size} bytes)`).join('\n'),
+      }]);
+    }
+
+    // A02: Cryptographic Failures — check headers for HTTPS enforcement
+    addLog(`[*] A02:2021 — Scanning for Cryptographic Failures...`);
+    const headers = await analyzeSecurityHeaders(targetUrl);
+    const hstsPresent = headers.headers.find(h => h.name === 'Strict-Transport-Security');
+    if (hstsPresent?.status === 'critical') {
+      addLog(`[!] HSTS not set — vulnerable to SSL stripping`);
+    } else {
+      addLog(`[+] HSTS configured correctly`);
+    }
+    addLog(`[+] Security Grade: ${headers.grade} (${headers.score}/100)`);
+    headers.headers.filter(h => h.status === 'critical').forEach(h => {
+      addLog(`[!] ${h.name}: ${h.description}`);
+    });
+
+    setExtractedFiles(prev => [...prev, {
+      name: 'security_headers_owasp.json',
+      size: `${JSON.stringify(headers, null, 2).length} bytes`,
+      type: 'A02/A05: Headers & Crypto Analysis',
+      content: JSON.stringify(headers, null, 2),
+    }]);
+
+    // A03: Injection — real SQLi, XSS, traversal payloads
+    addLog(`[*] A03:2021 — Scanning for Injection vulnerabilities (SQLi, XSS, Path Traversal)...`);
+    const vulns = await testVulnerabilities(targetUrl);
+    const critical = vulns.filter(v => v.severity === 'critical' || v.severity === 'high');
+    vulns.forEach(v => {
+      const prefix = v.severity === 'critical' ? '[!] CRITICAL' : v.severity === 'high' ? '[!] HIGH' : `[*] ${v.severity.toUpperCase()}`;
+      addLog(`${prefix}: ${v.type} | param=${v.parameter} | ${v.indication}`);
+    });
+
+    setExtractedFiles(prev => [...prev, {
+      name: 'injection_report.json',
+      size: `${JSON.stringify(vulns, null, 2).length} bytes`,
+      type: 'A03: Injection Findings',
+      content: JSON.stringify(vulns, null, 2),
+    }]);
+
+    // A05: Security Misconfiguration — probe target
+    addLog(`[*] A05:2021 — Scanning for Security Misconfiguration...`);
+    const probe = await probeTarget(targetUrl);
+    if (probe.server) addLog(`[!] Server header exposed: ${probe.server}`);
+    if (probe.headers['x-powered-by']) addLog(`[!] X-Powered-By exposed: ${probe.headers['x-powered-by']}`);
+    if (probe.technologies.length > 0) addLog(`[+] Technologies detected: ${probe.technologies.join(', ')}`);
+
+    // A06: Vulnerable Components — check scripts
+    addLog(`[*] A06:2021 — Scanning for Vulnerable and Outdated Components...`);
+    const crawl = await crawlTarget(targetUrl);
+    addLog(`[+] Spider: ${crawl.links.length} links, ${crawl.forms.length} forms, ${crawl.scripts.length} scripts`);
+    crawl.scripts.forEach(s => {
+      if (s.includes('jquery') && (s.includes('1.') || s.includes('2.'))) {
+        addLog(`[!] Outdated jQuery detected: ${s}`);
+      }
+      if (s.includes('angular') && s.includes('1.')) {
+        addLog(`[!] Outdated AngularJS detected: ${s}`);
+      }
+    });
+
+    if (crawl.comments.length > 0) {
+      addLog(`[!] A09: ${crawl.comments.length} HTML comments found (info disclosure)`);
+    }
+
+    crawl.forms.forEach(f => {
+      addLog(`[+] Form: ${f.method.toUpperCase()} ${f.action} — inputs: ${f.inputs.join(', ')}`);
+    });
+
+    // Generate full OWASP report
+    const fullReport = { headers, vulns, dirs, probe: { status: probe.status, server: probe.server, tech: probe.technologies }, crawl };
+    setExtractedFiles(prev => [...prev, {
+      name: 'owasp_full_report.json',
+      size: `${JSON.stringify(fullReport, null, 2).length} bytes`,
+      type: 'Full OWASP Scan Report',
+      content: JSON.stringify(fullReport, null, 2),
+    }]);
+
+    addLog(`[!] OWASP ACTIVE SCAN COMPLETE. ${critical.length} critical/high, ${dirs.length} access issues, Grade: ${headers.grade}`);
+    setIsAttacking(false);
   };
 
   const startAiAssist = async () => {
@@ -126,42 +159,62 @@ export default function OwaspTool() {
     setIsAiAssisting(true);
     setIsAttacking(true);
     setExtractedFiles([]);
-    addLog(`[🧠 AI-ASSIST] Neural Core taking control of OWASP ZAP...`);
-    addLog(`[🧠 AI-ASSIST] Analyzing target architecture for ${target}...`);
+    const targetUrl = target.startsWith('http') ? target : `https://${target}`;
+    addLog(`[AI] Neural Core taking control of OWASP ZAP...`);
+    addLog(`[AI] Running real OWASP scans on ${targetUrl} before AI analysis...`);
 
+    // Real scans
+    const probe = await probeTarget(targetUrl);
+    addLog(`[+] Probe: HTTP ${probe.status} | Server: ${probe.server || 'hidden'} | Tech: ${probe.technologies.join(', ') || 'unknown'}`);
+
+    const headers = await analyzeSecurityHeaders(targetUrl);
+    addLog(`[+] Security Grade: ${headers.grade} (${headers.score}/100)`);
+
+    const vulns = await testVulnerabilities(targetUrl);
+    const critVulns = vulns.filter(v => v.severity === 'critical' || v.severity === 'high');
+    addLog(`[+] Injection tests: ${critVulns.length} critical/high out of ${vulns.length}`);
+
+    const crawl = await crawlTarget(targetUrl);
+    addLog(`[+] Spider: ${crawl.links.length} links, ${crawl.forms.length} forms, ${crawl.scripts.length} scripts`);
+
+    const dirs = await bruteforceDirectories(targetUrl);
+    addLog(`[+] Access control: ${dirs.length} accessible paths`);
+
+    // Feed real data to AI
+    addLog(`[AI] Feeding real OWASP scan data to Quantum Intelligence...`);
     try {
-      const prompt = `Act as an autonomous Blackhat AI integrated into OWASP ZAP. Generate a highly technical, step-by-step exploit execution log for the target: ${target}. Focus on OWASP Top 10 vulnerabilities (e.g., Broken Access Control, Injection, SSRF). Return ONLY the log lines, one per line, starting with [*] for info, [+] for success, or [!] for critical findings. Do not include markdown formatting or explanations. Max 10 lines.`;
-      
-      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: OWASP ZAP Offensive Security Module");
-      const lines = response.split('\n').filter(l => l.trim().length > 0);
-
-      let delay = 1500;
-      lines.forEach((line, index) => {
-        setTimeout(() => {
-          addLog(`[🤖 AI] ${line}`);
-
-          if (index === lines.length - 1) {
-            setTimeout(() => {
-              setExtractedFiles(prev => [...prev, {
-                name: 'ai_owasp_report.txt',
-                size: '3.4 KB',
-                type: 'AI Analysis',
-                content: `Target: ${target}\nAI Vulnerability Report:\n\n${lines.join('\n')}\n\nRecommendation: Immediate patching required.`
-              }]);
-              addLog(`[🧠 AI-ASSIST] Autonomous exploitation complete. Report generated.`);
-              setIsAiAssisting(false);
-              setIsAttacking(false);
-            }, 1000);
-          }
-        }, delay);
-        delay += Math.floor(Math.random() * 2000) + 800;
+      const realData = JSON.stringify({
+        probe: { status: probe.status, server: probe.server, technologies: probe.technologies },
+        securityHeaders: { grade: headers.grade, score: headers.score, critical: headers.headers.filter(h => h.status === 'critical').map(h => h.name) },
+        vulnerabilities: vulns.map(v => ({ type: v.type, param: v.parameter, severity: v.severity, indication: v.indication })),
+        crawl: { links: crawl.links.length, forms: crawl.forms, scripts: crawl.scripts, comments: crawl.comments.length },
+        accessControl: dirs.map(d => ({ path: d.path, status: d.status })),
       });
 
+      const prompt = `You are an OWASP security expert analyzing REAL scan results against ${targetUrl}. Here is the actual data:\n\n${realData}\n\nMap each finding to the OWASP Top 10 (2021). For each category, explain what was found, the risk level, exploitation method, and remediation. Reference the actual scan data. Format as a professional OWASP assessment report.`;
+      
+      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Real OWASP ZAP scan results analysis");
+      response.split('\n').filter((l: string) => l.trim()).forEach((line: string) => addLog(`[AI] ${line}`));
+
+      setExtractedFiles(prev => [...prev, {
+        name: 'ai_owasp_report.txt',
+        size: `${response.length} bytes`,
+        type: 'AI OWASP Report (Real Data)',
+        content: `Target: ${targetUrl}\nAI OWASP Top 10 Analysis:\n\n${response}`,
+      }, {
+        name: 'raw_owasp_data.json',
+        size: `${realData.length} bytes`,
+        type: 'Raw Scan Data',
+        content: realData,
+      }]);
+
+      addLog(`[AI] Real-data OWASP analysis complete. Report generated.`);
     } catch (error) {
-      addLog(`[!] AI Core connection failed. Falling back to manual mode.`);
-      setIsAiAssisting(false);
-      setIsAttacking(false);
+      addLog(`[!] AI Core connection failed. Raw scan data still available.`);
     }
+
+    setIsAiAssisting(false);
+    setIsAttacking(false);
   };
 
   return (

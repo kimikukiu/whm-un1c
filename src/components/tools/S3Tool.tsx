@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { queryAgent } from '../../services/geminiService';
+import { scanS3Buckets } from '../../services/realScanService';
 
 interface FoundFile {
   name: string;
@@ -12,7 +13,7 @@ export default function S3BucketsTool() {
   const [target, setTarget] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isAiAssisting, setIsAiAssisting] = useState(false);
-  const [logs, setLogs] = useState<string[]>(['S3_BUCKET_SCANNER_V1.0 initialized.', 'Waiting for target domain or keyword...']);
+  const [logs, setLogs] = useState<string[]>(['S3_BUCKET_SCANNER_V1.0 initialized.', 'All scans perform REAL HTTP requests to S3 endpoints.', 'Waiting for target domain or keyword...']);
   const [foundFiles, setFoundFiles] = useState<FoundFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +42,7 @@ export default function S3BucketsTool() {
     addLog(`[+] Downloaded: ${file.name}`);
   };
 
-  const startScan = () => {
+  const startScan = async () => {
     if (!target) {
       alert('Please enter a target domain or keyword.');
       return;
@@ -49,61 +50,54 @@ export default function S3BucketsTool() {
 
     setIsScanning(true);
     setFoundFiles([]);
-    addLog(`Initiating deep scan for S3 buckets related to: ${target}`);
-    addLog(`Generating permutations for ${target}...`);
+    const keyword = target.replace(/^https?:\/\//, '').replace(/\..*$/, '').replace(/[^a-zA-Z0-9-]/g, '');
+    addLog(`[!] INITIATING REAL S3 BUCKET SCAN for keyword: ${keyword}`);
+    addLog(`[*] Generating 22 permutations and sending real HTTP requests...`);
 
-    const permutations = [
-      target,
-      `${target}-dev`,
-      `${target}-prod`,
-      `${target}-staging`,
-      `${target}-assets`,
-      `${target}-public`,
-      `${target}-backup`,
-      `dev-${target}`,
-      `prod-${target}`,
-      `${target}-logs`
-    ];
-
-    let delay = 1000;
-    permutations.forEach((perm, index) => {
-      setTimeout(() => {
-        addLog(`Checking bucket: ${perm}.s3.amazonaws.com...`);
-        
-        // Simulate finding something on specific permutations
-        if (index === 2 || index === 5) {
-          setTimeout(() => {
-            addLog(`[!] BUCKET FOUND: ${perm}.s3.amazonaws.com`);
-            addLog(`[+] Access: PUBLIC_READ`);
-            addLog(`[+] Enumerating objects...`);
-            setTimeout(() => {
-              addLog(`    -> config.json (4.2 KB)`);
-              addLog(`    -> users_backup.csv (12.8 MB)`);
-              addLog(`    -> db_credentials.txt (0.1 KB) - CRITICAL`);
-              
-              setFoundFiles(prev => [
-                ...prev,
-                { name: 'config.json', size: '4.2 KB', content: '{\n  "dbHost": "internal-db.amazonaws.com",\n  "debug": true\n}', bucket: perm },
-                { name: 'users_backup.csv', size: '12.8 MB', content: 'id,email,hash\n1,admin@domain.com,$2y$10$...\n2,test@domain.com,$2y$10$...', bucket: perm },
-                { name: 'db_credentials.txt', size: '0.1 KB', content: 'DB_USER=root\nDB_PASS=super_secret_password_123\nDB_NAME=production_db', bucket: perm }
-              ]);
-            }, 800);
-          }, 500);
-        } else {
-          setTimeout(() => {
-            addLog(`[-] Bucket ${perm} not found or Access Denied (403).`);
-          }, 400);
-        }
-
-        if (index === permutations.length - 1) {
-          setTimeout(() => {
-            addLog(`Scan complete for target: ${target}.`);
-            setIsScanning(false);
-          }, 1500);
-        }
-      }, delay);
-      delay += 1500;
+    const results = await scanS3Buckets(keyword, (bucket, status) => {
+      addLog(`[!] BUCKET FOUND: ${bucket}.s3.amazonaws.com — ${status}`);
     });
+
+    const publicBuckets = results.filter(r => r.status === 'public');
+    const privateBuckets = results.filter(r => r.status === 'private');
+    const notFound = results.filter(r => r.status === 'not_found');
+
+    results.forEach(r => {
+      if (r.status === 'public') {
+        addLog(`[+] ${r.bucket} — PUBLIC (${r.objects.length} objects listed)`);
+        r.objects.slice(0, 10).forEach(obj => addLog(`    -> ${obj}`));
+        if (r.objects.length > 10) addLog(`    ... +${r.objects.length - 10} more objects`);
+      } else if (r.status === 'private') {
+        addLog(`[*] ${r.bucket} — EXISTS but Access Denied (403)`);
+      } else if (r.status === 'not_found') {
+        addLog(`[-] ${r.bucket} — not found (404)`);
+      } else {
+        addLog(`[-] ${r.bucket} — error: ${r.error || 'unknown'}`);
+      }
+    });
+
+    // Create downloadable reports for public buckets
+    publicBuckets.forEach(b => {
+      if (b.objects.length > 0) {
+        setFoundFiles(prev => [...prev, {
+          name: `${b.bucket}_listing.txt`,
+          size: `${b.objects.length} objects`,
+          bucket: b.bucket,
+          content: `Bucket: ${b.url}\nStatus: PUBLIC\nObjects:\n${b.objects.join('\n')}`,
+        }]);
+      }
+    });
+
+    // Full scan report
+    setFoundFiles(prev => [...prev, {
+      name: 's3_scan_report.json',
+      size: `${JSON.stringify(results, null, 2).length} bytes`,
+      bucket: keyword,
+      content: JSON.stringify(results, null, 2),
+    }]);
+
+    addLog(`[!] S3 SCAN COMPLETE. ${publicBuckets.length} public, ${privateBuckets.length} private, ${notFound.length} not found.`);
+    setIsScanning(false);
   };
 
   const startAiAssist = async () => {
@@ -115,42 +109,51 @@ export default function S3BucketsTool() {
     setIsAiAssisting(true);
     setIsScanning(true);
     setFoundFiles([]);
-    addLog(`[🧠 AI-ASSIST] Neural Core taking control of S3 Reaper...`);
-    addLog(`[🧠 AI-ASSIST] Generating advanced permutations and analyzing cloud infrastructure for ${target}...`);
+    const keyword = target.replace(/^https?:\/\//, '').replace(/\..*$/, '').replace(/[^a-zA-Z0-9-]/g, '');
+    addLog(`[AI] Neural Core taking control of S3 Reaper...`);
+    addLog(`[AI] Running real S3 scan on ${keyword} before AI analysis...`);
 
+    const results = await scanS3Buckets(keyword, (bucket, status) => {
+      addLog(`[+] FOUND: ${bucket} — ${status}`);
+    });
+
+    const publicBuckets = results.filter(r => r.status === 'public');
+    const privateBuckets = results.filter(r => r.status === 'private');
+    addLog(`[+] Scan complete: ${publicBuckets.length} public, ${privateBuckets.length} private`);
+
+    addLog(`[AI] Feeding real S3 scan data to Quantum Intelligence...`);
     try {
-      const prompt = `Act as an autonomous Blackhat AI integrated into an S3 Bucket Scanner. Generate a highly technical, step-by-step execution log for the target: ${target}. Focus on finding exposed cloud storage, misconfigured IAM roles, and sensitive data leaks. Return ONLY the log lines, one per line, starting with [*] for info, [+] for success, or [!] for critical findings. Do not include markdown formatting or explanations. Max 10 lines.`;
-      
-      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Cloud Security Offensive Module");
-      const lines = response.split('\n').filter(l => l.trim().length > 0);
-
-      let delay = 1500;
-      lines.forEach((line, index) => {
-        setTimeout(() => {
-          addLog(`[🤖 AI] ${line}`);
-
-          if (index === lines.length - 1) {
-            setTimeout(() => {
-              setFoundFiles(prev => [...prev, {
-                name: 'ai_cloud_recon_report.txt',
-                size: '5.1 KB',
-                bucket: `ai-recon-${target}`,
-                content: `Target: ${target}\nAI Cloud Reconnaissance Report:\n\n${lines.join('\n')}\n\nStatus: Exposed data identified and cataloged.`
-              }]);
-              addLog(`[🧠 AI-ASSIST] Autonomous scan complete. Report generated.`);
-              setIsAiAssisting(false);
-              setIsScanning(false);
-            }, 1000);
-          }
-        }, delay);
-        delay += Math.floor(Math.random() * 2000) + 800;
+      const realData = JSON.stringify({
+        keyword,
+        totalScanned: results.length,
+        publicBuckets: publicBuckets.map(b => ({ bucket: b.bucket, objects: b.objects.length, files: b.objects.slice(0, 20) })),
+        privateBuckets: privateBuckets.map(b => b.bucket),
       });
 
+      const prompt = `You are a cloud security expert analyzing REAL S3 bucket scan results for keyword "${keyword}". Here is the actual data:\n\n${realData}\n\nAnalyze: which buckets are exposed, what sensitive data might be in listed objects, exploitation paths (IAM misconfig, public access, data exfiltration), and remediation. Reference the actual scan data. Format as a professional cloud security assessment.`;
+      
+      const response = await queryAgent("ORCHESTRATOR", prompt, "Context: Real S3 bucket scan analysis");
+      response.split('\n').filter((l: string) => l.trim()).forEach((line: string) => addLog(`[AI] ${line}`));
+
+      setFoundFiles(prev => [...prev, {
+        name: 'ai_cloud_report.txt',
+        size: `${response.length} bytes`,
+        bucket: `ai-${keyword}`,
+        content: `Target: ${keyword}\nAI Cloud Security Report:\n\n${response}`,
+      }, {
+        name: 'raw_s3_data.json',
+        size: `${realData.length} bytes`,
+        bucket: keyword,
+        content: realData,
+      }]);
+
+      addLog(`[AI] Real-data cloud analysis complete.`);
     } catch (error) {
-      addLog(`[!] AI Core connection failed. Falling back to manual mode.`);
-      setIsAiAssisting(false);
-      setIsScanning(false);
+      addLog(`[!] AI Core failed. Raw scan data still available.`);
     }
+
+    setIsAiAssisting(false);
+    setIsScanning(false);
   };
 
   return (

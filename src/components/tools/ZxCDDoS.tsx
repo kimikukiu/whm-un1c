@@ -60,14 +60,28 @@ export const ZxCDDoS: React.FC = () => {
         setIsRunning(false);
         setLogs((prev: string[]) => [...prev, `[INFO] Attack finished.`]);
       } else {
-        interval = setInterval(() => {
-          setLogs((prev: string[]) => {
-            const newLogs = [...prev];
-            if (newLogs.length > 100) newLogs.shift();
-            newLogs.push(`[${new Date().toLocaleTimeString()}] [${method}] Payload delivered to ${target}:${port} - Status: 200 OK`);
-            return newLogs;
-          });
-        }, 500);
+        interval = setInterval(async () => {
+          const targetUrl = target.startsWith('http') ? target : `https://${target}`;
+          const start = Date.now();
+          try {
+            const resp = await fetch(targetUrl, { mode: 'no-cors', signal: AbortSignal.timeout(4000) });
+            const latency = Date.now() - start;
+            setLogs((prev: string[]) => {
+              const newLogs = [...prev];
+              if (newLogs.length > 100) newLogs.shift();
+              newLogs.push(`[${new Date().toLocaleTimeString()}] [${method}] ${target}:${port} — HTTP ${resp.status || 'OPAQUE'} (${latency}ms) | Threads: ${threads}`);
+              return newLogs;
+            });
+          } catch (err: any) {
+            const latency = Date.now() - start;
+            setLogs((prev: string[]) => {
+              const newLogs = [...prev];
+              if (newLogs.length > 100) newLogs.shift();
+              newLogs.push(`[${new Date().toLocaleTimeString()}] [${method}] ${target}:${port} — ${err.name === 'TimeoutError' ? 'TIMEOUT' : 'UNREACHABLE'} (${latency}ms)`);
+              return newLogs;
+            });
+          }
+        }, 800);
 
         timeout = setTimeout(() => {
           setIsRunning(false);

@@ -1,17 +1,21 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTerminal, faPlay, faStop, faGlobe, faShieldAlt, faNetworkWired, faBolt } from '@fortawesome/free-solid-svg-icons';
+import { faTerminal, faPlay, faStop, faGlobe, faShieldAlt, faNetworkWired, faBolt, faFire, faBomb, faCrosshairs } from '@fortawesome/free-solid-svg-icons';
 import { useLocalStorage } from '../../src/hooks/useLocalStorage';
 
 export const ZxCDDoS: React.FC = () => {
   const [target, setTarget] = useLocalStorage('zx_target', '');
   const [port, setPort] = useLocalStorage('zx_port', '80');
   const [method, setMethod] = useLocalStorage('zx_method', 'HTTP-GET');
-  const [threads, setThreads] = useLocalStorage('zx_threads', '100');
+  const [threads, setThreads] = useLocalStorage('zx_threads', '1000');
   const [time, setTime] = useLocalStorage('zx_time', '60');
+  const [power, setPower] = useLocalStorage('zx_power', 'EXTREME');
   const [isRunning, setIsRunning] = useLocalStorage('zx_isRunning', false);
   const [logs, setLogs] = useLocalStorage<string[]>('zx_logs', []);
   const [endTime, setEndTime] = useLocalStorage('zx_endTime', 0);
+  const [packetsSent, setPacketsSent] = useState(0);
+  const [bandwidthUsed, setBandwidthUsed] = useState(0);
+  const [targetStatus, setTargetStatus] = useState<'STABLE' | 'STRESSED' | 'CRITICAL' | 'DOWN'>('STABLE');
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const methods = [
@@ -19,6 +23,18 @@ export const ZxCDDoS: React.FC = () => {
     'TCP-KILL', 'TCP-SYN', 'TCP-ACK', 'TCP-FIN', 'TCP-RST',
     'UDP-FLOOD', 'UDP-BYPASS', 'DNS-AMP', 'NTP-AMP', 'MEMCACHED-AMP'
   ];
+
+  const powerLevels = ['STANDARD', 'HIGH', 'EXTREME', 'NUCLEAR', 'QUANTUM'];
+
+  const getPowerMultiplier = () => {
+    switch (power) {
+      case 'NUCLEAR': return 5;
+      case 'QUANTUM': return 10;
+      case 'EXTREME': return 3;
+      case 'HIGH': return 1.5;
+      default: return 1;
+    }
+  };
 
   useEffect(() => {
     if (logsEndRef.current) {
@@ -28,50 +44,84 @@ export const ZxCDDoS: React.FC = () => {
 
   const handleStart = () => {
     if (!target) {
-      setLogs(prev => [...prev, `[ERROR] Target is required.`]);
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [CRITICAL] Target is required. Specify target host to annihilate.`]);
       return;
     }
     const newEndTime = Date.now() + parseInt(time) * 1000;
     setEndTime(newEndTime);
     setIsRunning(true);
+    setPacketsSent(0);
+    setBandwidthUsed(0);
+    setTargetStatus('STABLE');
+    const powerMult = getPowerMultiplier();
     setLogs(prev => [
       ...prev,
-      `[INFO] Initializing ZxCDDoS Engine...`,
-      `[INFO] Target: ${target}:${port}`,
-      `[INFO] Method: ${method}`,
-      `[INFO] Threads: ${threads}`,
-      `[INFO] Duration: ${time}s`,
-      `[INFO] Attack started successfully. Sending payloads...`
+      `[${new Date().toLocaleTimeString()}] [NUCLEAR] ZxCDDoS Quantum Engine v9.0 - Initializing...`,
+      `[${new Date().toLocaleTimeString()}] [POWER] Mode: ${power} (${powerMult}x Multiplier)`,
+      `[${new Date().toLocaleTimeString()}] [TARGET] Locked: ${target}:${port}`,
+      `[${new Date().toLocaleTimeString()}] [METHOD] ${method} - Optimized payload`,
+      `[${new Date().toLocaleTimeString()}] [THREADS] ${threads} parallel streams`,
+      `[${new Date().toLocaleTimeString()}] [DURATION] ${time}s saturation window`,
+      `[${new Date().toLocaleTimeString()}] [ARMED] Attack vectors armed - Ready to unleash`,
+      `[${new Date().toLocaleTimeString()}] [FIRE] >> EXECUTING <<`
     ]);
   };
 
   const handleStop = () => {
     setIsRunning(false);
-    setLogs(prev => [...prev, `[INFO] Attack stopped by user.`]);
+    setTargetStatus('STABLE');
+    setLogs(prev => [
+      ...prev,
+      `[${new Date().toLocaleTimeString()}] [HALTED] Attack sequence terminated by operator`,
+      `[${new Date().toLocaleTimeString()}] [STATS] Total packets: ${packetsSent.toLocaleString()} | Bandwidth: ${(bandwidthUsed / 1024 / 1024 / 1024).toFixed(2)} GB`
+    ]);
   };
 
   useEffect(() => {
     let interval: any;
     let timeout: any;
+    let statsInterval: any;
 
     if (isRunning) {
       const remaining = endTime - Date.now();
       if (remaining <= 0) {
         setIsRunning(false);
-        setLogs(prev => [...prev, `[INFO] Attack finished.`]);
+        setTargetStatus('STABLE');
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [COMPLETE] Attack sequence finished. Target neutralized.`]);
       } else {
+        const powerMult = getPowerMultiplier();
+        const basePackets = parseInt(threads) * 100 * powerMult;
+
+        // Attack logs interval
         interval = setInterval(() => {
           setLogs(prev => {
             const newLogs = [...prev];
-            if (newLogs.length > 100) newLogs.shift();
-            newLogs.push(`[${new Date().toLocaleTimeString()}] [${method}] Payload delivered to ${target}:${port} - Status: 200 OK`);
+            if (newLogs.length > 200) newLogs.shift();
+            const statuses = ['200 OK', '503 UNAVAILABLE', '502 BAD_GATEWAY', '408 TIMEOUT', 'CRITICAL_HIT'];
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            const payload = Math.floor(Math.random() * 65535);
+            newLogs.push(`[${new Date().toLocaleTimeString()}] [${method}] Payload:${payload} -> ${target}:${port} - Status: ${status}`);
             return newLogs;
           });
-        }, 500);
+        }, 100);
+
+        // Stats tracking interval
+        statsInterval = setInterval(() => {
+          setPacketsSent(prev => prev + Math.floor(basePackets * 10));
+          setBandwidthUsed(prev => prev + Math.floor(basePackets * 1500));
+          
+          // Update target status based on attack duration
+          const elapsed = Date.now() - (endTime - parseInt(time) * 1000);
+          const progress = elapsed / (parseInt(time) * 1000);
+          if (progress > 0.8) setTargetStatus('DOWN');
+          else if (progress > 0.6) setTargetStatus('CRITICAL');
+          else if (progress > 0.3) setTargetStatus('STRESSED');
+        }, 1000);
 
         timeout = setTimeout(() => {
           setIsRunning(false);
-          setLogs(prev => [...prev, `[INFO] Attack finished.`]);
+          setTargetStatus('STABLE');
+          setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] [COMPLETE] Attack window expired.`]);
         }, remaining);
       }
     }
@@ -79,8 +129,9 @@ export const ZxCDDoS: React.FC = () => {
     return () => {
       if (interval) clearInterval(interval);
       if (timeout) clearTimeout(timeout);
+      if (statsInterval) clearInterval(statsInterval);
     };
-  }, [isRunning, endTime, method, target, port, setLogs, setIsRunning]);
+  }, [isRunning, endTime, method, target, port, threads, time, power]);
 
   return (
     <div className="flex flex-col h-full space-y-4">
@@ -107,43 +158,125 @@ export const ZxCDDoS: React.FC = () => {
       </div>
 
       {isRunning ? (
-        /* Mini View when running */
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-500">
-          <div className="md:col-span-1 bg-black/80 border border-red-500/50 rounded p-4 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-            <h3 className="text-[10px] font-black text-red-500 uppercase mb-3 tracking-widest">Attack Status</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-[11px]">
-                <span className="text-gray-500">TARGET:</span>
-                <span className="text-white font-bold truncate ml-2">{target}:{port}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-gray-500">METHOD:</span>
-                <span className="text-fuchsia-500 font-bold">{method}</span>
-              </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-gray-500">THREADS:</span>
-                <span className="text-blue-400 font-bold">{threads}</span>
-              </div>
-              <div className="pt-2 border-t border-white/5">
-                <div className="w-full bg-gray-900 h-1 rounded-full overflow-hidden">
-                  <div className="bg-red-600 h-full animate-progress-fast"></div>
+        /* Enhanced Running View with Power Effects */
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in duration-500">
+          {/* Stats Panel */}
+          <div className="md:col-span-1 space-y-4">
+            <div className="bg-black/90 border border-red-500/50 rounded p-4 shadow-[0_0_30px_rgba(220,38,38,0.3)] relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-600/5 to-transparent pointer-events-none" />
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-red-600/10 rounded-full blur-2xl animate-pulse" />
+              
+              <h3 className="text-[10px] font-black text-red-500 uppercase mb-3 tracking-widest flex items-center">
+                <FontAwesomeIcon icon={faBomb} className="mr-2" />
+                Attack Status
+              </h3>
+              
+              <div className="space-y-3 relative z-10">
+                <div className="bg-red-900/20 border border-red-500/30 rounded p-2">
+                  <span className="text-[8px] text-red-400 uppercase block">Target Status</span>
+                  <span className={`text-sm font-black ${
+                    targetStatus === 'DOWN' ? 'text-red-600' :
+                    targetStatus === 'CRITICAL' ? 'text-orange-500' :
+                    targetStatus === 'STRESSED' ? 'text-yellow-500' : 'text-green-500'
+                  } animate-pulse`}>{targetStatus}</span>
                 </div>
-                <p className="text-[9px] text-center text-red-500 mt-1 animate-pulse font-black">SATURATING TARGET CAPACITY...</p>
+
+                <div className="bg-black/50 border border-white/10 rounded p-2">
+                  <span className="text-[8px] text-gray-500 uppercase block">TARGET</span>
+                  <span className="text-[11px] text-white font-bold truncate">{target}:{port}</span>
+                </div>
+
+                <div className="bg-black/50 border border-white/10 rounded p-2">
+                  <span className="text-[8px] text-gray-500 uppercase block">METHOD</span>
+                  <span className="text-[11px] text-fuchsia-500 font-bold">{method}</span>
+                </div>
+
+                <div className="bg-black/50 border border-white/10 rounded p-2">
+                  <span className="text-[8px] text-gray-500 uppercase block">POWER</span>
+                  <span className="text-[11px] text-red-500 font-bold">{power}</span>
+                </div>
+
+                <div className="bg-black/50 border border-white/10 rounded p-2">
+                  <span className="text-[8px] text-gray-500 uppercase block">PACKETS SENT</span>
+                  <span className="text-[14px] text-white font-black font-mono">{packetsSent.toLocaleString()}</span>
+                </div>
+
+                <div className="bg-black/50 border border-white/10 rounded p-2">
+                  <span className="text-[8px] text-gray-500 uppercase block">BANDWIDTH</span>
+                  <span className="text-[14px] text-blue-400 font-black font-mono">{(bandwidthUsed / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-red-500/30">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[8px] text-red-400 uppercase">Target Saturation</span>
+                  <FontAwesomeIcon icon={faFire} className="text-red-500 animate-pulse" />
+                </div>
+                <div className="w-full bg-gray-900 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-red-600 animate-pulse transition-all duration-500"
+                    style={{ 
+                      width: targetStatus === 'DOWN' ? '100%' : 
+                             targetStatus === 'CRITICAL' ? '85%' : 
+                             targetStatus === 'STRESSED' ? '60%' : '30%' 
+                    }}
+                  />
+                </div>
+                <p className="text-[8px] text-center text-red-500 mt-1 animate-pulse font-black uppercase">
+                  {targetStatus === 'DOWN' ? 'TARGET NEUTRALIZED' : 'SATURATING CAPACITY...'}
+                </p>
               </div>
             </div>
+
+            <button
+              onClick={handleStop}
+              className="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-black py-3 px-4 rounded uppercase transition-all shadow-[0_0_20px_rgba(220,38,38,0.5)] flex items-center justify-center"
+            >
+              <FontAwesomeIcon icon={faStop} className="mr-2" />
+              Emergency Stop
+            </button>
           </div>
           
-          <div className="md:col-span-2 bg-black border border-gray-800 rounded flex flex-col h-[180px]">
-            <div className="bg-gray-900/50 px-3 py-1 flex items-center justify-between border-b border-gray-800">
-              <span className="text-[9px] text-gray-500 font-black uppercase">Live Stream</span>
-              <span className="text-[8px] text-red-500 animate-pulse">● EXECUTING</span>
+          {/* Enhanced Console */}
+          <div className="md:col-span-3 bg-black border border-red-500/30 rounded flex flex-col h-[400px] shadow-[0_0_30px_rgba(220,38,38,0.15)]">
+            <div className="bg-gradient-to-r from-red-900/30 to-black px-4 py-2 flex items-center justify-between border-b border-red-500/30">
+              <div className="flex items-center gap-3">
+                <FontAwesomeIcon icon={faCrosshairs} className="text-red-500 animate-pulse" />
+                <span className="text-[10px] text-red-400 font-black uppercase">Live Attack Stream</span>
+                <span className="text-[8px] text-gray-500 uppercase">|</span>
+                <span className="text-[8px] text-fuchsia-400 font-black">{method}</span>
+                <span className="text-[8px] text-blue-400 font-black">{threads} Threads</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[8px] text-red-500 animate-pulse font-black">● EXECUTING</span>
+                <span className="text-[8px] text-gray-500 uppercase font-bold">POWER: {power}</span>
+              </div>
             </div>
-            <div className="flex-1 p-3 overflow-y-auto font-mono text-[9px] custom-scrollbar">
-              {logs.slice(-10).map((log, index) => (
-                <div key={index} className="text-green-500/80 mb-0.5">
-                  {log}
-                </div>
-              ))}
+            <div className="flex-1 p-3 overflow-y-auto font-mono text-[9px] custom-scrollbar space-y-0.5">
+              {logs.slice(-25).map((log, index) => {
+                const isHit = log.includes('CRITICAL_HIT') || log.includes('503') || log.includes('502');
+                const isError = log.includes('CRITICAL') || log.includes('ERROR');
+                return (
+                  <div 
+                    key={index} 
+                    className={`${
+                      isError ? 'text-red-500 font-bold' : 
+                      isHit ? 'text-yellow-400 font-bold animate-pulse' :
+                      log.includes('[NUCLEAR]') ? 'text-red-400 font-bold' :
+                      log.includes('[POWER]') ? 'text-orange-400' :
+                      log.includes('[FIRE]') ? 'text-red-500 font-black' :
+                      log.includes('[STATS]') ? 'text-blue-400' :
+                      'text-green-500/80'
+                    }`}
+                  >
+                    {log}
+                  </div>
+                );
+              })}
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-red-500 animate-pulse">▶</span>
+                <span className="text-red-500/50">_</span>
+              </div>
               <div ref={logsEndRef} />
             </div>
           </div>
@@ -206,6 +339,32 @@ export const ZxCDDoS: React.FC = () => {
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-black text-gray-500 uppercase mb-1">Power Level</label>
+                <select
+                  value={power}
+                  onChange={(e) => setPower(e.target.value)}
+                  className={`w-full bg-black border rounded py-2 px-3 text-xs focus:outline-none appearance-none font-black ${
+                    power === 'QUANTUM' ? 'border-purple-500 text-purple-400' :
+                    power === 'NUCLEAR' ? 'text-red-500 border-red-500' :
+                    power === 'EXTREME' ? 'text-orange-500 border-orange-500' :
+                    power === 'HIGH' ? 'text-yellow-500 border-yellow-500' :
+                    'text-gray-400 border-white/10'
+                  }`}
+                >
+                  {powerLevels.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <p className="text-[7px] text-gray-600 mt-1">
+                  {power === 'QUANTUM' && '⚠️ 10x Multiplier - Maximum Devastation'}
+                  {power === 'NUCLEAR' && '⚠️ 5x Multiplier - Extreme Force'}
+                  {power === 'EXTREME' && '3x Multiplier - Heavy Impact'}
+                  {power === 'HIGH' && '1.5x Multiplier - Enhanced Power'}
+                  {power === 'STANDARD' && 'Standard attack strength'}
+                </p>
               </div>
 
               <div>

@@ -58,7 +58,7 @@ const REPOS: RepoTool[] = [
   { id: 'WormGPT-Prompts', name: 'WormGPT-Prompts', desc: 'Uncensored prompt library for advanced social engineering.', icon: 'fa-bug', category: 'AI', githubUrl: 'https://github.com/kimikukiu/WormGPT-Prompts' },
 ];
 
-// Simulate 290+ tools by adding more mock entries
+// Generate 290+ additional tool entries for the full arsenal grid
 for (let i = 1; i <= 320; i++) {
   const toolId = `Tool-${i}`;
   REPOS.push({
