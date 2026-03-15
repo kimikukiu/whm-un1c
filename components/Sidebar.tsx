@@ -44,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, target = "NO
     { id: AppTab.INVESTIGATION_AI, label: 'Investigation AI', icon: 'fa-search' },
     { id: AppTab.OSINT_INVESTIGATION, label: 'OSINT Engine', icon: 'fa-globe-americas' },
     { id: AppTab.ANDROID_INVESTIGATION, label: 'Android Forensics', icon: 'fa-mobile-alt' },
+    { id: AppTab.AWS_METADATA, label: 'AWS Metadata', icon: 'fab fa-aws' },
   ];
 
   const toolItems = [
