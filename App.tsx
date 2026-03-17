@@ -131,8 +131,12 @@ const MainApp: React.FC = () => {
     provider: 'openrouter',
     openrouterKey: '',
     openaiKey: '',
+    anthropicKey: "",
     geminiKey: '',
+    mistralKey: "",
+    llamaKey: "",
     deepseekKey: '',
+    deepseekBaseUrl: "http://localhost:8000",
     selectedModel: 'openai/gpt-4o',
     enableGemini: false,
   });

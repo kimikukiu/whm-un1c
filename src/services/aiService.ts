@@ -1,23 +1,3 @@
-import { AIConfig } from '../../types';
-
-let currentConfig: AIConfig = {
-  provider: 'openrouter',
-  openrouterKey: '',
-  openaiKey: '',
-  anthropicKey: '',
-  geminiKey: '',
-  mistralKey: '',
-  llamaKey: '',
-  deepseekKey: '',
-  selectedModel: 'nousresearch/hermes-3-llama-3.1-405b',
-  enableGemini: false,
-};
-
-export const setAIConfig = (config: AIConfig) => {
-  currentConfig = config;
-};
-
-export const getAIConfig = (): AIConfig => currentConfig;
 
 export const getActiveApiKey = (): string => {
   switch (currentConfig.provider) {
@@ -47,7 +27,7 @@ export const aiChat = async (
 ): Promise<string> => {
   const apiKey = getActiveApiKey();
   
-  if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') {
+  if (!apiKey if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') {if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') { currentConfig.provider !== 'lisp' if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') {if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') { currentConfig.provider !== 'milspec' if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') {if (!apiKey && currentConfig.provider !== 'lisp' && currentConfig.provider !== 'milspec') { currentConfig.provider !== 'deepseek') {
     throw new Error(`No API key configured for ${currentConfig.provider}`);
   }
 
@@ -96,7 +76,7 @@ const callOpenRouter = async (message: string, systemPrompt: string, apiKey: str
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://whoamisec.pro',
       'X-Title': 'WHOAMISEC_PRO',
@@ -127,7 +107,7 @@ const callOpenAI = async (message: string, systemPrompt: string, apiKey: string)
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -189,7 +169,7 @@ const callDeepSeek = async (message: string, systemPrompt: string, apiKey: strin
   const response = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -401,7 +381,7 @@ export const loadAIConfigFromStorage = (): AIConfig | null => {
   const stored = localStorage.getItem('whoamisec_ai_config');
   if (stored) {
     try {
-      const config = JSON.parse(stored);
+      const config = { ...DEFAULT_AI_CONFIG, ...JSON.parse(stored) };
       setAIConfig(config);
       return config;
     } catch (e) {

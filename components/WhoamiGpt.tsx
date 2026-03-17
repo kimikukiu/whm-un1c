@@ -191,7 +191,13 @@ const WhoamiGpt: React.FC<WhoamiGptProps> = ({ addLog, onMinimize, openTerminal,
   };
 
   const executeSwarmLogic = async (task: string, context: string) => {
+    const logBoth = (msg: string, level: LogEntry['level'] = 'info') => {
+      setTerminalLogs(prev => [...prev, msg]);
+      addLog(msg, level);
+    };
+
     try {
+       if (openTerminal) openTerminal();
        if (openTerminal) openTerminal();
        
        const logBoth = (msg: string, level: LogEntry['level'] = 'info') => {

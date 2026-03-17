@@ -234,6 +234,7 @@ export interface AIConfig {
   mistralKey: string;
   llamaKey: string;
   deepseekKey: string;
+  deepseekBaseUrl: string;
   selectedModel: string;
   enableGemini: boolean;
 }
