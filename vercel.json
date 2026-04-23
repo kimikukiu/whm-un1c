@@ -1,27 +1,15 @@
-cat > vercel.json << 'EOF'
 {
   "version": 2,
-  "name": "whoamisec-pro",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "framework": "vite",
-  "headers": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
-      ]
+      "src": "package.json",
+      "use": "@vercel/node"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
-EOF
