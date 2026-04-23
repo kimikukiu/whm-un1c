@@ -141,7 +141,8 @@ export enum AppTab {
   SPACEX_CONTROL = 'SPACEX_CONTROL',
   PROMIS_CONTROL = 'PROMIS_CONTROL',
   LISP_AI_CONTROL = 'LISP_AI_CONTROL'
-}
+
+  AUTO_POST = 'auto_post',}
 
 export interface TelegramConfig {
   botToken: string;

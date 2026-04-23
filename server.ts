@@ -9,12 +9,24 @@ import { evolutionService } from "./services/evolutionService";
 import { errorService } from "./services/errorService";
 import { autonomousAgentService } from "./services/autonomousAgentService";
 import { securityAuditService } from "./services/securityAuditService";
+import WHMun1cTelegramBot from "./telegram-bot";
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
+
+  // Start Telegram Bot
+  if (process.env.TELEGRAM_BOT_ENABLED === 'true') {
+    try {
+      const telegramBot = new WHMun1cTelegramBot();
+      telegramBot.start();
+      console.log('[Server] Telegram bot started');
+    } catch (error) {
+      console.error('[Server] Failed to start Telegram bot:', error);
+    }
+  }
 
   // API: Security Audit
   app.post("/api/security/audit", async (req, res) => {
