@@ -18,3 +18,18 @@ View your app in AI Studio: https://ai.studio/apps/eb64c5c7-156f-4af1-a6ba-c35ad
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+
+## 🤖 Auto Post - Social Media Automation (FREE GPT)
+
+🚀 **Access Auto Post here:** https://agl-3kw7j95v4-kimikukius-projects.vercel.app/auto-post
+
+### Features:
+- ✅ Generate Reels content (TikTok/Instagram)
+- ✅ Create Image descriptions & prompts
+- ✅ Write Video scripts  
+- ✅ Craft Text posts for any platform
+- ✅ Powered by GitHub Models API (GPT-4o-mini) - **100% FREE!**
+
+**AGL.ai is the hub** - all social media auto-posting happens here.
+
