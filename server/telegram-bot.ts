@@ -7,10 +7,11 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { providerManager } from './providers/provider-manager';
 import { wormGPTArsenal, logger, wormHttp, schedule } from './wormgpt-complete';
+import { TelegramSupremeAdmin } from './telegram-supreme-admin';
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8649153906:AAEQuT8FTZVJjpe_xib8UIw72f85Dn_FWEQ';
+const TOKEN=process.env.TELEGRAM_BOT_TOKEN || '8649153906:***';
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || '7966587808';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '#AllOfThem-3301';
+const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD || '#AllOfThem-3301';
 
 interface BotCommand {
   command: string;
@@ -21,11 +22,13 @@ interface BotCommand {
 export class WHMun1cTelegramBot {
   private bot: TelegramBot;
   private isRunning: boolean = false;
+  private supremeAdmin: TelegramSupremeAdmin;
 
   constructor() {
     this.bot = new TelegramBot(TOKEN, { polling: true });
     this.setupCommands();
-    console.log('[Telegram Bot] whm-un1c bot initialized');
+    this.supremeAdmin = new TelegramSupremeAdmin(this.bot, ADMIN_CHAT_ID);
+    console.log('[Telegram Bot] whm-un1c bot initialized with Supreme Admin');
   }
 
   private setupCommands() {
