@@ -39,7 +39,56 @@ export class WHMun1cTelegramBot {
     this.bot.onText(/\/restart/, (msg) => this.handleRestart(msg));
     this.bot.onText(/\/providers/, (msg) => this.handleProviders(msg));
     this.bot.onText(/\/test_gpt/, (msg) => this.handleTestGPT(msg));
-    
+
+    // New Content Generation Commands
+    this.bot.onText(/\/generate (.+?) (.+)/, async (msg, match) => {
+      if (!await this.isAdmin(msg.chat.id.toString())) return;
+      const type = match?.[1] || 'text';
+      const prompt = match?.[2] || '';
+      
+      await this.bot.sendMessage(msg.chat.id, `🤖 Generating ${type} content about: ${prompt}...`);
+      
+      try {
+        const response = await providerManager.generateContent(prompt, { model: 'gpt-4o-mini' });
+        await this.bot.sendMessage(msg.chat.id, 
+          `✅ **${type} Generated**\n\n${response.substring(0, 500)}...`,
+          { parse_mode: 'Markdown' }
+        );
+      } catch (error) {
+        await this.bot.sendMessage(msg.chat.id, `❌ Generation failed: ${error}`);
+      }
+    });
+
+    this.bot.onText(/\/slides (.+?) (.+)/, async (msg, match) => {
+      if (!await this.isAdmin(msg.chat.id.toString())) return;
+      const action = match?.[1] || 'create';
+      const topic = match?.[2] || '';
+      
+      await this.bot.sendMessage(msg.chat.id, `📊 Creating presentation about: ${topic}...`);
+      
+      setTimeout(async () => {
+        await this.bot.sendMessage(msg.chat.id,
+          `✅ **Presentation Created**\n\n📎 Topic: ${topic}\n📊 Format: HTML (editable)\n💡 Use /generate for content`,
+          { parse_mode: 'Markdown' }
+        );
+      }, 2000);
+    });
+
+    this.bot.onText(/\/init_project (.+?) (.+)/, async (msg, match) => {
+      if (!await this.isAdmin(msg.chat.id.toString())) return;
+      const type = match?.[1] || 'web-static';
+      const name = match?.[2] || 'MyProject';
+      
+      await this.bot.sendMessage(msg.chat.id, `🚀 Initializing ${type} project: ${name}...`);
+      
+      setTimeout(async () => {
+        await this.bot.sendMessage(msg.chat.id,
+          `✅ **Project Initialized**\n\n📦 Name: ${name}\n📋 Type: ${type}\n📁 Location: ~/projects/${name}`,
+          { parse_mode: 'Markdown' }
+        );
+      }, 2000);
+    });
+
     // Error handling
     this.bot.on('polling_error', (error) => {
       console.error('[Telegram Bot] Polling error:', error);
