@@ -10,6 +10,7 @@ import { GroqProvider, createGroqProvider } from './groq';
 import { TogetherProvider, createTogetherProvider } from './together';
 import { HuggingFaceProvider, createHuggingFaceProvider } from './huggingface';
 import { KilocodeProvider, createKilocodeProvider } from './kilocode';
+import { GitHubCodeSearchProvider, createGitHubCodeSearchProvider } from './github-code-search';
 
 export interface ProviderStatus {
   name: string;
@@ -72,7 +73,6 @@ export class ProviderManager {
 
     // 2. GitHub Code Search (FREE - no token needed for basic)
     try {
-      const { GitHubCodeSearchProvider, createGitHubCodeSearchProvider } = require('./github-code-search');
       const searchProvider = createGitHubCodeSearchProvider();
       this.registerProvider('github-code-search', searchProvider, {
         name: 'github-code-search',

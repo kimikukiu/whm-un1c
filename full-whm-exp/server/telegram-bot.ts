@@ -5,8 +5,9 @@
  */
 
 import TelegramBot from 'node-telegram-bot-api';
-import { providerManager } from './providers/provider-manager';
-import { wormGPTArsenal, logger, wormHttp, schedule } from './wormgpt-complete';
+import { providerManager } from './providers/manager';
+import wormGPTModule from './wormgpt-complete';
+const { wormGPTArsenal, logger, wormHttp, schedule } = wormGPTModule;
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8333250394:AAF5V1xI0KXJo18LKcR6M0iVpGzfvqENY3Y';
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '7966587808';
@@ -191,7 +192,7 @@ export class FullWHMExpTelegramBot {
     });
 
     // WormHTTP Test
-    this.bot.onText(/\/wormgpt_http (.+)/, (msg, match) => {
+    this.bot.onText(/\/wormgpt_http (.+)/, async (msg, match) => {
       if (!this.isAdmin(msg.chat.id.toString())) return;
       const url = match?.[1];
       if (!url) {

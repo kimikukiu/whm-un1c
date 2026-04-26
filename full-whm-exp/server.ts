@@ -10,7 +10,7 @@ import { errorService } from "./services/errorService";
 import { autonomousAgentService } from "./services/autonomousAgentService";
 import { securityAuditService } from "./services/securityAuditService";
 import { executeTool, getExecutionHistory, getAvailableTools, networkScan, vulnerabilityScan } from "./server/tools/offensive-security";
-import FullWHMExpTelegramBot from "./telegram-bot";
+import FullWHMExpTelegramBot from "./server/telegram-bot";
 
 async function startServer() {
   const app = express();

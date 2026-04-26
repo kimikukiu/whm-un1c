@@ -49,11 +49,11 @@ export class GitHubCodeSearchProvider extends BaseProvider {
           
           // Get file content if available
           if (item.text_matches) {
-            text += `**Matches:**\n\`;
+            text += `**Matches:**\n\`\`\`\n`;
             item.text_matches.slice(0, 3).forEach((match: any) => {
               text += match.fragment.substring(0, 200) + '...\n';
             });
-            text += '\`\n\n';
+            text += '\`\`\`\n\n';
           }
         });
         

@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, target = "NO
     { label: 'OWASP ZAP', icon: 'fa-radar', url: '/owasp-tool', color: 'text-[#3b82f6]' },
     // Advanced Tools from D:\WHOAMISec-Exp-Pro\Email Extractors and D:\WormGpt2026
     { label: 'ITS L7 DDoS', icon: 'fa-bomb', url: '/offensive-security?tool=its-l7-ddos', color: 'text-[#ff0000]' },
-    { label: 'EMAIL EXTRACTOR', icon: 'fa-envelope', url: '/offensive-security?tool=email-extractor-pro', color: 'text-[#00ff00]' },
+    { label: 'EMAIL EXTRACTOR', icon: 'fa-envelope', url: '/email-extractors-pro', color: 'text-[#00ff00]' },
     { label: 'BOTNET C2', icon: 'fa-network-wired', url: '/offensive-security?tool=botnet-c2-controller', color: 'text-[#ff00ff]' },
     { label: 'PROXY SCRAPER', icon: 'fa-globe', url: '/offensive-security?tool=proxy-scraper', color: 'text-[#00ffff]' },
     { label: 'SQLi DORKS', icon: 'fa-database', url: '/offensive-security?tool=sqli-dorks-generator', color: 'text-[#ffff00]' },

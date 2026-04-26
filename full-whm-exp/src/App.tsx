@@ -35,6 +35,7 @@ import LazarusTool from './components/tools/LazarusTool';
 import BurpSuiteTool from './components/tools/BurpSuiteTool';
 import OwaspTool from './components/tools/OwaspTool';
 import { ZxCDDoS } from './components/tools/ZxCDDoS';
+import EmailExtractorsPro from './components/EmailExtractorsPro';
 
 const BOT_LOCATIONS: BotNode[] = [
   { id: 'WHOAMI-US-CLUSTER', country: 'United States', status: 'ONLINE', latency: 28, uptime: '45d', type: 'SERVER' },
@@ -706,6 +707,7 @@ const App: React.FC = () => {
       <Route path="/lazarus-tool" element={<LazarusTool />} />
       <Route path="/burpsuite-tool" element={<BurpSuiteTool />} />
       <Route path="/owasp-tool" element={<OwaspTool />} />
+      <Route path="/email-extractors-pro" element={<EmailExtractorsPro />} />
     </Routes>
   );
 };

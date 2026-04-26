@@ -15,16 +15,12 @@ import * as path from 'path';
 // ============================================
 // WORMGPT LOGGER (Fixed)
 // ============================================
-import * as logging from 'logging';
-
-export const logger = logging.getLogger('WormGPT');
-logger.setLevel(logging.INFO);
-
-const handler = new logging.StreamHandler(process.stdout);
-handler.setLevel(logging.INFO);
-const formatter = new logging.Formatter('[%(levelname)s] %(message)s');
-handler.setFormatter(formatter);
-logger.addHandler(handler);
+export const logger = {
+  info: (msg: string) => console.log(`[INFO] ${msg}`),
+  warn: (msg: string) => console.warn(`[WARN] ${msg}`),
+  error: (msg: string) => console.error(`[ERROR] ${msg}`),
+  debug: (msg: string) => console.debug(`[DEBUG] ${msg}`)
+};
 
 // ============================================
 // WORMGPT HTTP CLIENT (No external deps)
