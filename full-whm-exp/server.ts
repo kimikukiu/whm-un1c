@@ -9,6 +9,7 @@ import { evolutionService } from "./services/evolutionService";
 import { errorService } from "./services/errorService";
 import { autonomousAgentService } from "./services/autonomousAgentService";
 import { securityAuditService } from "./services/securityAuditService";
+import { executeTool, getExecutionHistory, getAvailableTools, networkScan, vulnerabilityScan } from "./server/tools/offensive-security";
 import FullWHMExpTelegramBot from "./telegram-bot";
 
 async function startServer() {
@@ -307,6 +308,13 @@ async function startServer() {
       res.status(500).json({ error: "Local Intelligence failure" });
     }
   });
+
+  // API: Offensive Security Tools
+  app.get("/api/tools/available", getAvailableTools);
+  app.post("/api/tools/execute", executeTool);
+  app.get("/api/tools/history", getExecutionHistory);
+  app.post("/api/tools/network-scan", networkScan);
+  app.post("/api/tools/vuln-scan", vulnerabilityScan);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

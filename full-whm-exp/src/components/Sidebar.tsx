@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { AppTab } from '../types';
+import OffensiveToolsMenu from './OffensiveToolsMenu';
+import OffensiveToolsMenu from './OffensiveToolsMenu';
 
 interface SidebarProps {
   activeTab: AppTab;
@@ -14,10 +16,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, target = "NO
   const menuItems = [
     { id: AppTab.DASHBOARD, label: 'Control Center', icon: 'fa-microchip' },
     { id: AppTab.QUANTUM_INTELLIGENCE, label: 'Quantum Intel', icon: 'fa-atom' },
+    { id: 'AUTONOMOUS_WORKFLOW', label: 'Auto Workflow', icon: 'fa-robot' },
+    { id: 'AGENT_SEARCH', label: 'Agent Search', icon: 'fa-search' },
+    { id: 'MULTIMEDIA_GENERATION', label: 'Media Gen', icon: 'fa-magic' },
+    { id: 'REAL_TIME_MONITORING', label: 'System Monitor', icon: 'fa-chart-line' },
     { id: AppTab.OSINT_DASHBOARD, label: 'OSINT Dashboard', icon: 'fa-globe' },
     { id: AppTab.EXTRACTOR, label: 'Deep Extractor', icon: 'fa-user-secret' },
     { id: AppTab.SQL_INJECT, label: 'Payload Vault', icon: 'fa-database' },
     { id: AppTab.NETWORK, label: 'Attack Console', icon: 'fa-satellite-dish' },
+    // Offensive Tools will be handled by the dropdown component
     { id: AppTab.ZXCDDOS, label: 'ZxCDDoS', icon: 'fa-bolt' },
     { id: AppTab.IDE_TOOL, label: 'Quantum IDE', icon: 'fa-code' },
     { id: AppTab.BOTNET_CORE, label: 'Zombie Swarm', icon: 'fa-users-rays' },
@@ -41,6 +48,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, target = "NO
     { label: 'LAZARUS APT', icon: 'fa-user-secret', url: '/lazarus-tool', color: 'text-[#991b1b]' },
     { label: 'BURPSUITE', icon: 'fa-spider', url: '/burpsuite-tool', color: 'text-[#ff6600]' },
     { label: 'OWASP ZAP', icon: 'fa-radar', url: '/owasp-tool', color: 'text-[#3b82f6]' },
+    // Advanced Tools from D:\WHOAMISec-Exp-Pro\Email Extractors and D:\WormGpt2026
+    { label: 'ITS L7 DDoS', icon: 'fa-bomb', url: '/offensive-security?tool=its-l7-ddos', color: 'text-[#ff0000]' },
+    { label: 'EMAIL EXTRACTOR', icon: 'fa-envelope', url: '/offensive-security?tool=email-extractor-pro', color: 'text-[#00ff00]' },
+    { label: 'BOTNET C2', icon: 'fa-network-wired', url: '/offensive-security?tool=botnet-c2-controller', color: 'text-[#ff00ff]' },
+    { label: 'PROXY SCRAPER', icon: 'fa-globe', url: '/offensive-security?tool=proxy-scraper', color: 'text-[#00ffff]' },
+    { label: 'SQLi DORKS', icon: 'fa-database', url: '/offensive-security?tool=sqli-dorks-generator', color: 'text-[#ffff00]' },
+    { label: 'HTTP BROWSER', icon: 'fa-browser', url: '/offensive-security?tool=http-browser-tool', color: 'text-[#ff8800]' },
+    { label: 'JSCAN VULN', icon: 'fa-bug', url: '/offensive-security?tool=jscan-vuln-scanner', color: 'text-[#ff0088]' },
+    { label: 'HAJIME BOTNET', icon: 'fa-virus', url: '/offensive-security?tool=hajime-botnet-tool', color: 'text-[#8800ff]' },
+    { label: 'GEOGUARD', icon: 'fa-shield-alt', url: '/offensive-security?tool=geoguard-protection', color: 'text-[#00ff88]' },
   ];
 
   return (

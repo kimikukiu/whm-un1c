@@ -15,6 +15,11 @@ import Settings from './components/Settings';
 import QuantumIntelligenceUltra from './components/QuantumIntelligence';
 import AdminControlPanel from './components/AdminControlPanel';
 import DonationSupport from './components/DonationSupport';
+import AutonomousWorkflowBuilder from './components/AutonomousWorkflowBuilder';
+import AgentSearchSystem from './components/AgentSearchSystem';
+import MultimediaGenerationSystem from './components/MultimediaGenerationSystem';
+import RealTimeMonitoring from './components/RealTimeMonitoring';
+import OffensiveSecurity from './components/OffensiveSecurity';
 import { AppTab, LogEntry, OSINTResult, ThreatFeedItem, NetworkConfig, BotNode } from './types';
 import { analyzeTarget } from './services/geminiService';
 
@@ -55,6 +60,14 @@ const STRATEGIES = {
     "DROWN-X (HTTP/S)", 
     "STARS-X (FETCH)", 
     "BYPASS-V9 (TRON)"
+  ],
+  [AppTab.OFFENSIVE_SECURITY]: [
+    "Account Checkers",
+    "Network Scanners", 
+    "Vulnerability Assessment",
+    "Bruteforce Tools",
+    "Credit Card Validators",
+    "Social Media Checkers"
   ]
 };
 
@@ -597,6 +610,26 @@ const MainApp: React.FC = () => {
 
         {activeTab === AppTab.QUANTUM_INTELLIGENCE && (
           <QuantumIntelligenceUltra />
+        )}
+
+        {activeTab === 'AUTONOMOUS_WORKFLOW' && (
+          <AutonomousWorkflowBuilder addLog={addLog} />
+        )}
+
+        {activeTab === 'AGENT_SEARCH' && (
+          <AgentSearchSystem addLog={addLog} />
+        )}
+
+        {activeTab === 'MULTIMEDIA_GENERATION' && (
+          <MultimediaGenerationSystem addLog={addLog} />
+        )}
+
+        {activeTab === 'REAL_TIME_MONITORING' && (
+          <RealTimeMonitoring addLog={addLog} />
+        )}
+
+        {activeTab === AppTab.OFFENSIVE_SECURITY && (
+          <OffensiveSecurity addLog={addLog} />
         )}
 
         {/* Terminal Popup Bubble */}
