@@ -36,6 +36,9 @@ import BurpSuiteTool from './components/tools/BurpSuiteTool';
 import OwaspTool from './components/tools/OwaspTool';
 import { ZxCDDoS } from './components/tools/ZxCDDoS';
 import EmailExtractorsPro from './components/EmailExtractorsPro';
+import WormGPTWHOAMISec from './components/tools/WormGPTWHOAMISec';
+import PowerLadonTool from './components/tools/PowerLadonTool';
+import ToolsFuckCollection from './components/tools/ToolsFuckCollection';
 
 const BOT_LOCATIONS: BotNode[] = [
   { id: 'WHOAMI-US-CLUSTER', country: 'United States', status: 'ONLINE', latency: 28, uptime: '45d', type: 'SERVER' },
@@ -708,6 +711,9 @@ const App: React.FC = () => {
       <Route path="/burpsuite-tool" element={<BurpSuiteTool />} />
       <Route path="/owasp-tool" element={<OwaspTool />} />
       <Route path="/email-extractors-pro" element={<EmailExtractorsPro />} />
+      <Route path="/wormgpt-whoamisec" element={<WormGPTWHOAMISec />} />
+      <Route path="/powerladon-tool" element={<PowerLadonTool />} />
+      <Route path="/tools-fuck-collection" element={<ToolsFuckCollection />} />
     </Routes>
   );
 };

@@ -51,6 +51,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, target = "NO
     // Advanced Tools from D:\WHOAMISec-Exp-Pro\Email Extractors and D:\WormGpt2026
     { label: 'ITS L7 DDoS', icon: 'fa-bomb', url: '/offensive-security?tool=its-l7-ddos', color: 'text-[#ff0000]' },
     { label: 'EMAIL EXTRACTOR', icon: 'fa-envelope', url: '/email-extractors-pro', color: 'text-[#00ff00]' },
+    { label: 'WORMGPT WHOAMISec', icon: 'fa-bug', url: '/wormgpt-whoamisec', color: 'text-[#ff0000]' },
+    { label: 'POWERLADON', icon: 'fa-search', url: '/powerladon-tool', color: 'text-[#ff6600]' },
+    { label: 'TOOLS FUCK', icon: 'fa-fire', url: '/tools-fuck-collection', color: 'text-[#ff0088]' },
     { label: 'BOTNET C2', icon: 'fa-network-wired', url: '/offensive-security?tool=botnet-c2-controller', color: 'text-[#ff00ff]' },
     { label: 'PROXY SCRAPER', icon: 'fa-globe', url: '/offensive-security?tool=proxy-scraper', color: 'text-[#00ffff]' },
     { label: 'SQLi DORKS', icon: 'fa-database', url: '/offensive-security?tool=sqli-dorks-generator', color: 'text-[#ffff00]' },
