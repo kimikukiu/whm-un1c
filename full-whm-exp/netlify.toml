@@ -1,0 +1,25 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[context.production.environment]
+  NODE_ENV = "production"
+  VITE_API_URL = "https://whoamisec-pro.netlify.app"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "development"
+  VITE_API_URL = "https://deploy-preview-whoamisec-pro.netlify.app"
+
+[context.branch-deploy.environment]
+  NODE_ENV = "development"
+  VITE_API_URL = "https://branch-deploy-whoamisec-pro.netlify.app"
