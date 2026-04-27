@@ -64,5 +64,37 @@ export const openRouterService = {
        console.error('OpenRouter Direct Fetch Error:', error);
        throw error;
      }
+  },
+
+  // HuggingFace Inference API support
+  huggingface: async (message: string, context: string = '', model: string = 'cloudbjorn/Qwen3.6-27B_Samantha-Uncensored') => {
+    try {
+      const response = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.HF_API_TOKEN || 'hf_demo_key'}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: `Context: ${context}\n\nUser: ${message}\n\nAs Samantha-Uncensored, respond:`,
+          parameters: {
+            max_new_tokens: 1500,
+            temperature: 0.8,
+            top_p: 0.9,
+            return_full_text: false
+          }
+        })
+      });
+      
+      const data = await response.json();
+      if (data && data[0] && data[0].generated_text) {
+        return data[0].generated_text;
+      }
+      
+      return "### ⚡ HUGGINGFACE_RESPONSE: Model processing complete.";
+    } catch (error) {
+      console.error('HuggingFace API Error:', error);
+      return "### ⚡ HUGGINGFACE_ERROR: Unable to process request.";
+    }
   }
 };

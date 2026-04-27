@@ -1,7 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
+import { HuggingFaceService } from "./huggingfaceService";
 
-export type AIProvider = 'google' | 'anthropic' | 'groq' | 'openai' | 'deepseek';
+export type AIProvider = 'google' | 'anthropic' | 'groq' | 'openai' | 'deepseek' | 'huggingface';
 
 export class AITaskQueue {
   private apiKey: string = "";
@@ -26,6 +27,9 @@ export class AITaskQueue {
     } else if (newKey.startsWith("sk-")) {
       this.activeProvider = "openai";
       this.activeModel = "gpt-4o";
+    } else if (newKey.startsWith("hf_")) {
+      this.activeProvider = "huggingface";
+      this.activeModel = "cloudbjorn/Qwen3.6-27B_Samantha-Uncensored";
     } else {
       // Default to google for this app if key is present but prefix is unknown
       // or if key is empty (it will fail anyway, but we want to use the Google SDK)
@@ -58,6 +62,8 @@ export class AITaskQueue {
           return await this.callAnthropic(prompt);
         case 'groq':
           return await this.callGroq(prompt);
+        case 'huggingface':
+          return await this.callHuggingFace(prompt);
         default:
           return await this.callGoogle(prompt);
       }
@@ -221,5 +227,15 @@ export class AITaskQueue {
       headers: { "Authorization": `Bearer ${this.apiKey}` }
     });
     return response.data.choices[0].message.content;
+  }
+
+  private async callHuggingFace(prompt: string): Promise<string> {
+    try {
+      const hfService = new HuggingFaceService(this.apiKey);
+      return await hfService.generateResponse(this.activeModel, prompt, 2000);
+    } catch (error: any) {
+      console.error("[AI CORE] HuggingFace Error:", error.message);
+      return `### ⚡ HUGGINGFACE_ERROR: ${error.message}`;
+    }
   }
 }
